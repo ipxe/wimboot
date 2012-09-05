@@ -125,12 +125,25 @@ setup:
 	movw	%ax, %gs
 	movw	%ax, %ss
 
+	/* Zero real-mode and protected-mode .bss sections */
+	xorl	%eax, %eax
+	movl	$_bss16, %edi
+	movl	$_bss16_len, %ecx
+	rep stosb
+	movl	$_bss, %edi
+	movl	$_bss_len, %ecx
+	rep stosb
+
 	/* Copy payload to runtime address */
 	movl	$LOADED_HIGH_ADDRESS, %esi
-	movl	$BASE_ADDRESS, %edi
-	movl	$_payload_filesz, %ecx
+	movl	$_payload, %edi
+	movl	$_payload_len, %ecx
 	cld
 	rep movsb
+
+	/* Copy parameters required by runtime */
+	movl	%cs:cmd_line_ptr, %eax
+	movl	%eax, cmdline
 
 	/* Jump to payload */
 	ljmp	$PREFIX_FLAT_CS, $_start

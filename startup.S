@@ -26,11 +26,69 @@
 
 #include "wimboot.h"
 
-	.text
 	.arch	i386
-	.section ".text", "ax", @progbits
 
 	/* Startup code */
+	.section ".text", "ax", @progbits
 	.globl	_start
 _start:
-1:	jmp	1b
+	/* Reload GDT, IDT, and all segment registers, and set up stack */
+	lgdt	gdt
+	lidt	idt
+	ljmp	$FLAT_CS, $1f
+1:	movw	$FLAT_DS, %ax
+	movw	%ax, %ds
+	movw	%ax, %es
+	movw	%ax, %fs
+	movw	%ax, %gs
+	movw	%ax, %ss
+	movl	$_estack, %esp
+
+	/* Jump to C code */
+	call	main
+
+	/* Should never return */
+1:	hlt
+	jmp	1b
+	.size	_start, . - _start
+
+	/* Global descriptor table */
+	.section ".rodata16", "aw", @progbits
+	.globl	gdt
+gdt:
+	.word	gdt_limit
+	.long	gdt
+	/* 32 bit protected mode flat code segment */
+	.org	( gdt + FLAT_CS )
+	.word	0xffff, 0
+	.byte	0, 0x9f, 0xcf, 0
+	/* 32 bit protected mode flat data segment */
+	.org	( gdt + FLAT_DS )
+	.word	0xffff, 0
+	.byte	0, 0x93, 0xcf, 0
+	/* 16 bit flat real mode code segment with base BASE_ADDRESS */
+	.org	( gdt + REAL_CS )
+	.word	0xffff, ( BASE_ADDRESS & 0xffff )
+	.byte	( BASE_ADDRESS >> 16 ), 0x9b, 0x8f, 0
+	/* 16 bit flat real mode data segment with base BASE_ADDRESS */
+	.org	( gdt + REAL_DS )
+	.word	0xffff, ( BASE_ADDRESS & 0xffff )
+	.byte	( BASE_ADDRESS >> 16 ), 0x93, 0x8f, 0
+	.size	gdt, . - gdt
+	.equ	gdt_limit, . - gdt - 1
+
+	/* Interrupt descriptor table */
+	.section ".data16", "ax", @progbits
+	.globl	idt
+idt:
+	.word	0	/* Limit */
+	.long	0	/* Base */
+	.size	idtr, . - idtr
+
+	/* Stack */
+	.section ".bss", "aw", @nobits
+	.align	8
+_stack:
+	.space	4096
+	.size	_stack, . - _stack
+_estack:
