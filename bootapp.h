@@ -61,21 +61,55 @@ struct bootapp_callback_params {
 		struct segoff function;
 	} vector;
 	/** %eax value */
-	uint32_t eax;
+	union {
+		struct {
+			uint8_t al;
+			uint8_t ah;
+		} __attribute__ (( packed ));
+		uint16_t ax;
+		uint32_t eax;
+	};
 	/** %ebx value */
-	uint32_t ebx;
+	union {
+		struct {
+			uint8_t bl;
+			uint8_t bh;
+		} __attribute__ (( packed ));
+		uint16_t bx;
+		uint32_t ebx;
+	};
 	/** %ecx value */
-	uint32_t ecx;
+	union {
+		struct {
+			uint8_t cl;
+			uint8_t ch;
+		} __attribute__ (( packed ));
+		uint16_t cx;
+		uint32_t ecx;
+	};
 	/** %edx value */
-	uint32_t edx;
+	union {
+		struct {
+			uint8_t dl;
+			uint8_t dh;
+		} __attribute__ (( packed ));
+		uint16_t dx;
+		uint32_t edx;
+	};
 	/** Placeholder (for %esp?) */
 	uint32_t unused_esp;
 	/** Placeholder (for %ebp?) */
 	uint32_t unused_ebp;
 	/** %esi value */
-	uint32_t esi;
+	union {
+		uint16_t si;
+		uint32_t esi;
+	};
 	/** %edi value */
-	uint32_t edi;
+	union {
+		uint16_t di;
+		uint32_t edi;
+	};
 	/** Placeholder (for %cs?) */
 	uint32_t unused_cs;
 	/** %ds value */
@@ -91,6 +125,16 @@ struct bootapp_callback_params {
 	/** eflags value */
 	uint32_t eflags;
 } __attribute__ (( packed ));
+
+/** eflags bits */
+enum eflags {
+	CF = ( 1 << 0 ),
+	PF = ( 1 << 2 ),
+	AF = ( 1 << 4 ),
+	ZF = ( 1 << 6 ),
+	SF = ( 1 << 7 ),
+	OF = ( 1 << 11 ),
+};
 
 /** Real-mode callback function table */
 struct bootapp_callback_functions {

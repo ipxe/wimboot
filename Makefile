@@ -1,4 +1,5 @@
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
+OBJECTS += int13.o vdisk.o
 HEADERS := $(wildcard *.h)
 
 OBJCOPY := objcopy

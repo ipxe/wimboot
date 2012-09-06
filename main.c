@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "wimboot.h"
 #include "peloader.h"
+#include "int13.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -53,34 +54,32 @@ enum {
 	NUM_REGIONS
 };
 
-static void wrap_call_interrupt ( struct bootapp_callback_params *params ) {
+/**
+ * Wrap interrupt callback
+ *
+ * @v params		Parameters
+ */
+static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
 
-	if ( params->vector.interrupt == 0x13 ) {
-		printf ( "Calling INT%02x,%04x\n",
-			 params->vector.interrupt,
-			 ( params->eax & 0xffff ) );
-		__asm__ __volatile__ ( "xchgw %bx, %bx" );
+	/* Intercept INT 13 calls for the emulated drive */
+	if ( ( params->vector.interrupt == 0x13 ) &&
+	     ( params->dl == EMULATED_DRIVE ) ) {
+		emulate_int13 ( params );
+	} else {
+		call_interrupt ( params );
 	}
-	call_interrupt ( params );
-}
-
-static void wrap_call_real ( struct bootapp_callback_params *params ) {
-	printf ( "Calling %04x:%04x\n", params->vector.function.segment,
-		 params->vector.function.offset );
-	__asm__ __volatile__ ( "xchgw %bx, %bx" );
-	call_real ( params );
 }
 
 /** Real-mode callback functions */
 static struct bootapp_callback_functions callback_fns = {
-	.call_interrupt = wrap_call_interrupt,
-	.call_real = wrap_call_real,
+	.call_interrupt = call_interrupt_wrapper,
+	.call_real = call_real,
 };
 
 /** Real-mode callbacks */
 static struct bootapp_callback callback = {
 	.fns = &callback_fns,
-	.drive = 0x80,
+	.drive = EMULATED_DRIVE,
 };
 
 /** Boot application descriptor set */
@@ -176,6 +175,9 @@ int main ( void ) {
 
 	/* Jump to PE image */
 	pe.entry ( &bootapps.bootapp );
+
+	/* Die */
+	printf ( "FATAL: PE image returned\n" );
 
 	return 0;
 }
