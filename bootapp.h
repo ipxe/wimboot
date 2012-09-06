@@ -37,6 +37,20 @@ struct segoff {
 	uint16_t segment;
 } __attribute__ (( packed ));
 
+/** A GUID */
+struct guid {
+	/** 8 hex digits, big-endian */
+	uint32_t a;
+	/** 2 hex digits, big-endian */
+	uint16_t b;
+	/** 2 hex digits, big-endian */
+	uint16_t c;
+	/** 2 hex digits, big-endian */
+	uint16_t d;
+	/** 12 hex digits, big-endian */
+	uint8_t e[6];
+} __attribute__ (( packed ));
+
 /** Real-mode callback parameters */
 struct bootapp_callback_params {
 	/** Vector */
@@ -123,7 +137,7 @@ struct bootapp_descriptor {
 	/** Offset to memory descriptor */
 	uint32_t memory;
 	/** Offset to boot application entry descriptor */
-	uint32_t btapent;
+	uint32_t entry;
 	/** Offset to ??? */
 	uint32_t xxx;
 	/** Offset to callback descriptor */
@@ -176,6 +190,62 @@ struct bootapp_memory_descriptor {
 /** Boot application memory descriptor version */
 #define BOOTAPP_MEMORY_VERSION 1
 
+/** Boot application entry descriptor */
+struct bootapp_entry_descriptor {
+	/** Signature */
+	char signature[8];
+	/** Flags */
+	uint32_t flags;
+	/** GUID */
+	struct guid guid;
+	/** Reserved */
+	uint8_t reserved[16];
+} __attribute__ (( packed ));
+
+/** ??? */
+struct bootapp_entry_wtf1_descriptor {
+	/** Flags */
+	uint32_t flags;
+	/** Length of descriptor */
+	uint32_t len;
+	/** Total length of following descriptors within BTAPENT */
+	uint32_t extra_len;
+	/** Reserved */
+	uint8_t reserved[12];
+} __attribute__ (( packed ));
+
+/** ??? */
+struct bootapp_entry_wtf2_descriptor {
+	/** GUID */
+	struct guid guid;
+} __attribute__ (( packed ));
+
+/** ??? */
+struct bootapp_entry_wtf3_descriptor {
+	/** Version */
+	uint32_t version;
+	/** Reserved */
+	uint32_t reserved_0x04;
+	/** Length of descriptor */
+	uint32_t len;
+	/** Reserved */
+	uint32_t reserved_0x0c;
+	/** Flags */
+	uint32_t flags;
+	/** Reserved */
+	uint8_t reserved_0x14[50];
+} __attribute__ (( packed ));
+
+/** "BTAPENT" magic signature */
+#define BOOTAPP_ENTRY_SIGNATURE "BTAPENT\0"
+
+/** Boot application entry flags
+ *
+ * pxeboot, etftboot, and fatboot all use a value of 0x21; I have no
+ * idea what it means.
+ */
+#define BOOTAPP_ENTRY_FLAGS 0x21
+
 /** Boot application callback descriptor */
 struct bootapp_callback_descriptor {
 	/** Real-mode callbacks */
@@ -183,5 +253,16 @@ struct bootapp_callback_descriptor {
 	/** Reserved */
 	uint32_t reserved;
 } __attribute__ (( packed ));
+
+/** Boot application pointless descriptor */
+struct bootapp_pointless_descriptor {
+	/** Version */
+	uint32_t version;
+	/** Reserved */
+	uint8_t reserved[24];
+} __attribute__ (( packed ));
+
+/** Boot application pointless descriptor version */
+#define BOOTAPP_POINTLESS_VERSION 1
 
 #endif /* _BOOTAPP_H */

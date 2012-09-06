@@ -53,10 +53,23 @@ enum {
 	NUM_REGIONS
 };
 
+static void wrap_call_interrupt ( struct bootapp_callback_params *params ) {
+	printf ( "Calling INT%02x\n", params->vector.interrupt );
+	__asm__ __volatile__ ( "xchgw %bx, %bx" );
+	call_interrupt ( params );
+}
+
+static void wrap_call_real ( struct bootapp_callback_params *params ) {
+	printf ( "Calling %04x:%04x\n", params->vector.function.segment,
+		 params->vector.function.offset );
+	__asm__ __volatile__ ( "xchgw %bx, %bx" );
+	call_real ( params );
+}
+
 /** Real-mode callback functions */
 static struct bootapp_callback_functions callback_fns = {
-	.call_interrupt = call_interrupt,
-	.call_real = call_real,
+	.call_interrupt = wrap_call_interrupt,
+	.call_real = wrap_call_real,
 };
 
 /** Real-mode callbacks */
@@ -73,8 +86,16 @@ static struct {
 	struct bootapp_memory_descriptor memory;
 	/** Boot application memory descriptor regions */
 	struct bootapp_memory_region regions[NUM_REGIONS];
+	/** Boot application entry descriptor */
+	struct bootapp_entry_descriptor entry;
+	struct bootapp_entry_wtf1_descriptor wtf1;
+	struct bootapp_entry_wtf2_descriptor wtf2;
+	struct bootapp_entry_wtf3_descriptor wtf3;
+	struct bootapp_entry_wtf3_descriptor wtf3_copy;
 	/** Boot application callback descriptor */
 	struct bootapp_callback_descriptor callback;
+	/** Boot application pointless descriptor */
+	struct bootapp_pointless_descriptor pointless;
 } __attribute__ (( packed )) bootapps = {
 	.bootapp = {
 		.signature = BOOTAPP_SIGNATURE,
@@ -82,7 +103,10 @@ static struct {
 		.len = sizeof ( bootapps ),
 		.arch = BOOTAPP_ARCH_I386,
 		.memory = offsetof ( typeof ( bootapps ), memory ),
+		.entry = offsetof ( typeof ( bootapps ), entry ),
+		.xxx = offsetof ( typeof ( bootapps ), wtf3 ),
 		.callback = offsetof ( typeof ( bootapps ), callback ),
+		.pointless = offsetof ( typeof ( bootapps ), pointless ),
 	},
 	.memory = {
 		.version = BOOTAPP_MEMORY_VERSION,
@@ -91,8 +115,31 @@ static struct {
 		.region_len = sizeof ( bootapps.regions[0] ),
 		.reserved_len = sizeof ( bootapps.regions[0].reserved ),
 	},
+	.entry = {
+		.signature = BOOTAPP_ENTRY_SIGNATURE,
+		.flags = BOOTAPP_ENTRY_FLAGS,
+	},
+	.wtf1 = {
+		.flags = 0x11000001,
+		.len = sizeof ( bootapps.wtf1 ),
+		.extra_len = ( sizeof ( bootapps.wtf2 ) +
+			       sizeof ( bootapps.wtf3 ) ),
+	},
+	.wtf3 = {
+		.version = 0x00000004,
+		.len = sizeof ( bootapps.wtf3 ),
+		.flags = 0x00000100,
+	},
+	.wtf3_copy = {
+		.version = 0x00000004,
+		.len = sizeof ( bootapps.wtf3_copy ),
+		.flags = 0x00000100,
+	},
 	.callback = {
 		.callback = &callback,
+	},
+	.pointless = {
+		.version = BOOTAPP_POINTLESS_VERSION,
 	},
 };
 
