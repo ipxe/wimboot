@@ -28,6 +28,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "wimboot.h"
+#include "peloader.h"
 
 /** Command line */
 char *cmdline;
@@ -43,6 +44,8 @@ size_t initrd_len;
  *
  */
 int main ( void ) {
+	struct loaded_pe pe;
+	struct bootapp_params bootapp;
 
 	/* Print test message */
 	printf ( "Hello world\n" );
@@ -53,7 +56,14 @@ int main ( void ) {
 
 	/* Print initrd location, if any */
 	if ( initrd_len )
-		printf ( "initrd at %p+%zx\n", initrd, initrd_len );
+		printf ( "initrd at %p+%#zx\n", initrd, initrd_len );
+
+	/* Load PE image to memory */
+	load_pe ( initrd, initrd_len, &pe );
+
+	/* Jump to PE image */
+	__asm__ __volatile__ ( "xchgw %bx, %bx" );
+	pe.entry ( &bootapp );
 
 	return 0;
 }

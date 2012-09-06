@@ -100,6 +100,10 @@ struct callback_params {
 	uint32_t eflags;
 } __attribute__ (( packed ));
 
+/** Boot application parameters */
+struct bootapp_params {
+} __attribute__ (( packed ));
+
 extern void call_real ( struct callback_params *params );
 extern void call_interrupt ( struct callback_params *params );
 

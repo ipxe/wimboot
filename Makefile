@@ -1,4 +1,4 @@
-OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o
+OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 HEADERS := $(wildcard *.h)
 
 OBJCOPY := objcopy
