@@ -51,6 +51,8 @@
 
 #ifndef ASSEMBLY
 
+#include <stdint.h>
+
 /** A segment:offset address */
 struct segoff {
 	/** Offset */

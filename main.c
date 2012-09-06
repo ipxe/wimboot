@@ -25,47 +25,35 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include "wimboot.h"
 
 /** Command line */
 char *cmdline;
 
-/**
- * Print character to console
- *
- * @v character		Character to print
- */
-static void putchar ( uint8_t character ) {
-	struct callback_params params;
+/** initrd */
+void *initrd;
 
-	/* Convert LF to CR,LF */
-	if ( character == '\n' )
-		putchar ( '\r' );
-
-	/* Print character */
-	params.vector.interrupt = 0x10;
-	params.eax = ( 0x0e00 | character );
-	params.ebx = 0x0007;
-	call_interrupt ( &params );
-}
+/** Length of initrd */
+size_t initrd_len;
 
 /**
  * Main entry point
  *
  */
 int main ( void ) {
-	const char *hello = "Hello world\n";
 
 	/* Print test message */
-	while ( *hello )
-		putchar ( *(hello++) );
+	printf ( "Hello world\n" );
 
 	/* Print command line, if any */
-	if ( cmdline ) {
-		while ( *cmdline )
-			putchar ( *(cmdline++) );
-		putchar ( '\n' );
-	}
+	if ( cmdline )
+		printf ( "%s\n", cmdline );
+
+	/* Print initrd location, if any */
+	if ( initrd_len )
+		printf ( "initrd at %p+%zx\n", initrd, initrd_len );
 
 	return 0;
 }

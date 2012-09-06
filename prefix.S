@@ -144,6 +144,10 @@ setup:
 	/* Copy parameters required by runtime */
 	movl	%cs:cmd_line_ptr, %eax
 	movl	%eax, cmdline
+	movl	%cs:ramdisk_image, %eax
+	movl	%eax, initrd
+	movl	%cs:ramdisk_size, %eax
+	movl	%eax, initrd_len
 
 	/* Jump to payload */
 	ljmp	$PREFIX_FLAT_CS, $_start
