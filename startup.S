@@ -83,7 +83,7 @@ gdt:
 idt:
 	.word	0	/* Limit */
 	.long	0	/* Base */
-	.size	idtr, . - idtr
+	.size	idt, . - idt
 
 	/* Stack */
 	.section ".bss", "aw", @nobits

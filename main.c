@@ -54,8 +54,13 @@ enum {
 };
 
 static void wrap_call_interrupt ( struct bootapp_callback_params *params ) {
-	printf ( "Calling INT%02x\n", params->vector.interrupt );
-	__asm__ __volatile__ ( "xchgw %bx, %bx" );
+
+	if ( params->vector.interrupt == 0x13 ) {
+		printf ( "Calling INT%02x,%04x\n",
+			 params->vector.interrupt,
+			 ( params->eax & 0xffff ) );
+		__asm__ __volatile__ ( "xchgw %bx, %bx" );
+	}
 	call_interrupt ( params );
 }
 
@@ -126,14 +131,18 @@ static struct {
 			       sizeof ( bootapps.wtf3 ) ),
 	},
 	.wtf3 = {
-		.version = 0x00000004,
+		.version = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
-		.flags = 0x00000100,
+		.flags = 0x00010000,
+		.xxx = 0x01,
+		.mbr_signature = 0x12345678,
 	},
 	.wtf3_copy = {
-		.version = 0x00000004,
-		.len = sizeof ( bootapps.wtf3_copy ),
-		.flags = 0x00000100,
+		.version = 0x00000006,
+		.len = sizeof ( bootapps.wtf3 ),
+		.flags = 0x00010000,
+		.xxx = 0x01,
+		.mbr_signature = 0x12345678,
 	},
 	.callback = {
 		.callback = &callback,

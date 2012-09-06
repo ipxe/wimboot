@@ -233,7 +233,13 @@ struct bootapp_entry_wtf3_descriptor {
 	/** Flags */
 	uint32_t flags;
 	/** Reserved */
-	uint8_t reserved_0x14[50];
+	uint8_t reserved_0x14[16];
+	/** MBR signature present? */
+	uint32_t xxx;
+	/** MBR signature */
+	uint32_t mbr_signature;
+	/** Reserved */
+	uint8_t reserved_0x2c[26];
 } __attribute__ (( packed ));
 
 /** "BTAPENT" magic signature */

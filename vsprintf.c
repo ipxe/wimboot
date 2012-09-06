@@ -45,7 +45,11 @@ int putchar ( int character ) {
 	if ( character == '\n' )
 		putchar ( '\r' );
 
-	/* Print character */
+	/* Print character to bochs debug port */
+	__asm__ __volatile__ ( "outb %b0, $0xe9"
+			       : : "a" ( character ) );
+
+	/* Print character to BIOS console */
 	params.vector.interrupt = 0x10;
 	params.eax = ( 0x0e00 | character );
 	params.ebx = 0x0007;
