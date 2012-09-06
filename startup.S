@@ -30,8 +30,8 @@
 
 	/* Startup code */
 	.section ".text", "ax", @progbits
-	.globl	_start
-_start:
+	.globl	startup
+startup:
 	/* Reload GDT, IDT, and all segment registers, and set up stack */
 	lgdt	gdt
 	lidt	idt
@@ -50,7 +50,7 @@ _start:
 	/* Should never return */
 1:	hlt
 	jmp	1b
-	.size	_start, . - _start
+	.size	startup, . - startup
 
 	/* Global descriptor table */
 	.section ".rodata16", "aw", @progbits
@@ -89,6 +89,6 @@ idt:
 	.section ".bss", "aw", @nobits
 	.align	8
 _stack:
-	.space	4096
+	.space	65536
 	.size	_stack, . - _stack
 _estack:

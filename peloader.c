@@ -47,7 +47,12 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	const struct pe_optional_header *opthdr;
 	size_t section_offset;
 	const struct coff_section *section;
+	char name[ sizeof ( section->name ) + 1 /* NUL */ ];
 	unsigned int i;
+	void *section_base;
+	size_t filesz;
+	size_t memsz;
+	void *end;
 
 	printf ( "Loading PE executable...\n" );
 
@@ -70,21 +75,29 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	opthdr_offset = ( pehdr_offset + sizeof ( *pehdr ) );
 	opthdr = ( data + opthdr_offset );
 	pe->base = ( ( void * ) ( opthdr->base ) );
-	printf ( "...base address %p\n", pe->base );
 	section_offset = ( opthdr_offset + pehdr->coff.opthdr_len );
 	section = ( data + section_offset );
 
+	/* Load header into memory */
+	printf ( "...headers to %p+%#zx\n", pe->base, opthdr->header_len );
+	memcpy ( pe->base, data, opthdr->header_len );
+	end = ( pe->base + opthdr->header_len );
+
 	/* Load each section into memory */
 	for ( i = 0 ; i < pehdr->coff.num_sections ; i++, section++ ) {
-		char name[ sizeof ( section->name ) + 1 /* NUL */ ];
 		memset ( name, 0, sizeof ( name ) );
 		memcpy ( name, section->name, sizeof ( section->name ) );
-		printf ( "...from %#05x to %p+%#zx (%s)\n", section->start,
-			 ( opthdr->base + section->virtual ),
-			 section->misc.virtual_len, name );
-		memcpy ( ( pe->base + section->virtual ),
-			 ( data + section->start ), section->misc.virtual_len );
+		section_base = ( pe->base + section->virtual );
+		filesz = section->raw_len;
+		memsz = section->misc.virtual_len;
+		printf ( "...from %#05x to %p+%#zx/%#zx (%s)\n",
+			 section->raw, section_base, filesz, memsz, name );
+		memset ( section_base, 0, memsz );
+		memcpy ( section_base, ( data + section->raw ), filesz );
+		if ( end < ( section_base + memsz ) )
+			end = ( section_base + memsz );
 	}
+	pe->len = ( end - pe->base );
 
 	/* Extract entry point */
 	pe->entry = ( pe->base + opthdr->entry );

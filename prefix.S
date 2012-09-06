@@ -150,7 +150,7 @@ setup:
 	movl	%eax, initrd_len
 
 	/* Jump to payload */
-	ljmp	$PREFIX_FLAT_CS, $_start
+	ljmp	$PREFIX_FLAT_CS, $startup
 	.size	setup, . - setup
 
 	/* Global descriptor table */

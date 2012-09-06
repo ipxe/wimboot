@@ -39,7 +39,7 @@ size_t wcrtomb ( char *buf, wchar_t wc, mbstate_t *ps __unused ) {
  * @v character		Character to print
  */
 int putchar ( int character ) {
-	struct callback_params params;
+	struct bootapp_callback_params params;
 
 	/* Convert LF to CR,LF */
 	if ( character == '\n' )

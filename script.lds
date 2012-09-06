@@ -11,6 +11,7 @@ SECTIONS {
 
 	/* Payload code executes at 0x20000 */
 	. = 0x20000;
+	_start = .;
 
 	/* Real-mode uninitialised data section */
 	.bss16 ( NOLOAD ) : {
@@ -50,4 +51,6 @@ SECTIONS {
 		_ebss = .;
 	}
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
+
+	_end = .;
 }

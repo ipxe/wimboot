@@ -52,60 +52,44 @@
 #ifndef ASSEMBLY
 
 #include <stdint.h>
+#include <bootapp.h>
 
-/** A segment:offset address */
-struct segoff {
-	/** Offset */
-	uint16_t offset;
-	/** Segment */
-	uint16_t segment;
-} __attribute__ (( packed ));
+/** Page size */
+#define PAGE_SIZE 4096
 
-/** Callback parameters */
-struct callback_params {
-	/** Vector */
-	union {
-		uint32_t interrupt;
-		struct segoff function;
-	} vector;
-	/** %eax value */
-	uint32_t eax;
-	/** %ebx value */
-	uint32_t ebx;
-	/** %ecx value */
-	uint32_t ecx;
-	/** %edx value */
-	uint32_t edx;
-	/** Reserved */
-	uint32_t reserved0;
-	/** Reserved */
-	uint32_t reserved1;
-	/** %esi value */
-	uint32_t esi;
-	/** %edi value */
-	uint32_t edi;
-	/** Reserved */
-	uint32_t reserved2;
-	/** %ds value */
-	uint32_t ds;
-	/** Reserved */
-	uint32_t reserved3;
-	/** %es value */
-	uint32_t es;
-	/** %fs value */
-	uint32_t fs;
-	/** %gs value */
-	uint32_t gs;
-	/** eflags value */
-	uint32_t eflags;
-} __attribute__ (( packed ));
+/**
+ * Calculate start page number
+ *
+ * @v address		Address
+ * @ret page		Start page number
+ */
+static inline unsigned int page_start ( const void *address ) {
+	return ( ( ( intptr_t ) address ) / PAGE_SIZE );
+}
 
-/** Boot application parameters */
-struct bootapp_params {
-} __attribute__ (( packed ));
+/**
+ * Calculate end page number
+ *
+ * @v address		Address
+ * @ret page		End page number
+ */
+static inline unsigned int page_end ( const void *address ) {
+	return ( ( ( ( intptr_t ) address ) + PAGE_SIZE - 1 ) / PAGE_SIZE );
+}
 
-extern void call_real ( struct callback_params *params );
-extern void call_interrupt ( struct callback_params *params );
+/**
+ * Calculate page length
+ *
+ * @v start		Start address
+ * @v end		End address
+ * @ret num_pages	Number of pages
+ */
+static inline unsigned int page_len ( const void *start, const void *end ) {
+	return ( page_end ( end ) - page_start ( start ) );
+}
+
+extern void call_real ( struct bootapp_callback_params *params );
+extern void call_interrupt ( struct bootapp_callback_params *params );
 
 #endif /* ASSEMBLY */
 

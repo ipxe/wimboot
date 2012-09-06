@@ -107,9 +107,9 @@ struct coff_section {
 	/** Virtual address */
 	uint32_t virtual;
 	/** Length of raw data */
-	uint32_t len;
+	uint32_t raw_len;
 	/** Offset to raw data */
-	uint32_t start;
+	uint32_t raw;
 	/** Offset to relocations */
 	uint32_t relocations;
 	/** Offset to line numbers */
@@ -138,9 +138,9 @@ struct pe_optional_header {
 	/** Magic number */
 	uint16_t magic;
 	/** Major linker version */
-	uint8_t major;
+	uint8_t linker_major;
 	/** Minor linker version */
-	uint8_t minor;
+	uint8_t linker_minor;
 	/** Length of code */
 	uint32_t text_len;
 	/** Length of initialised data */
@@ -155,6 +155,28 @@ struct pe_optional_header {
 	uint32_t data;
 	/** Image base address */
 	uint32_t base;
+	/** Section alignment */
+	uint32_t section_align;
+	/** File alignment */
+	uint32_t file_align;
+	/** Major operating system version */
+	uint16_t os_major;
+	/** Minor operating system version */
+	uint16_t os_minor;
+	/** Major image version */
+	uint16_t image_major;
+	/** Minor image version */
+	uint16_t image_minor;
+	/** Major subsystem version */
+	uint16_t subsystem_major;
+	/** Minor subsystem version */
+	uint16_t subsystem_minor;
+	/** Win32 version */
+	uint32_t win32_version;
+	/** Size of image */
+	uint32_t len;
+	/** Size of headers */
+	uint32_t header_len;
 	/* Plus extra fields that we don't care about */
 } __attribute__ (( packed ));
 
@@ -162,8 +184,10 @@ struct pe_optional_header {
 struct loaded_pe {
 	/** Base address */
 	void *base;
+	/** Length */
+	size_t len;
 	/** Entry point */
-	void ( * entry ) ( struct bootapp_params *params );
+	void ( * entry ) ( struct bootapp_descriptor *bootapp );
 };
 
 extern int load_pe ( const void *data, size_t len, struct loaded_pe *pe );
