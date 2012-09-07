@@ -41,20 +41,26 @@
  * @ret ah		Status code
  */
 static void int13_get_parameters ( struct bootapp_callback_params *params ) {
+	unsigned int max_cylinder = ( VDISK_CYLINDERS - 1 );
+	unsigned int max_head = ( VDISK_HEADS - 1 );
+	unsigned int max_sector = ( VDISK_SECTORS_PER_TRACK - 0 /* sic */ );
 	unsigned int num_drives;
 	unsigned int min_num_drives;
 
 	/* Calculate number of drives to report */
-	num_drives = BIOS_DRIVE_COUNT;
-	min_num_drives = ( EMULATED_DRIVE & 0x7f );
+	num_drives = INT13_DRIVE_COUNT;
+	min_num_drives = ( ( VDISK_DRIVE & 0x7f ) + 1 );
 	if ( num_drives < min_num_drives )
 		num_drives = min_num_drives;
 
 	/* Fill in drive parameters */
-	params->ch = ( MAX_CHS_CYLINDER & 0xff );
-	params->cl = ( ( ( MAX_CHS_CYLINDER >> 8 ) << 6 ) | MAX_CHS_SECTOR );
-	params->dh = MAX_CHS_HEAD;
-	params->dl = BIOS_DRIVE_COUNT + 1;
+	params->ch = ( max_cylinder & 0xff );
+	params->cl = ( ( ( max_cylinder >> 8 ) << 6 ) | max_sector );
+	params->dh = max_head;
+	params->dl = num_drives;
+	printf ( "Get parameters: C/H/S = %d/%d/%d, drives = %d\n",
+		 ( max_cylinder + 1 ), ( max_head + 1 ), max_sector,
+		 num_drives );
 
 	/* Success */
 	params->ah = 0;
@@ -67,11 +73,15 @@ static void int13_get_parameters ( struct bootapp_callback_params *params ) {
  * @ret ah		Type code
  */
 static void int13_get_disk_type ( struct bootapp_callback_params *params ) {
+	uint32_t sector_count = VDISK_COUNT;
+	uint8_t drive_type = INT13_DISK_TYPE_HDD;
 
 	/* Fill in disk type */
-	params->cx = ( MAX_SECTOR >> 16 );
-	params->dx = ( MAX_SECTOR & 0xffff );
-	params->ah = INT13_DISK_TYPE_HDD;
+	params->cx = ( sector_count >> 16 );
+	params->dx = ( sector_count & 0xffff );
+	params->ah = drive_type;
+	printf ( "Get disk type: sectors = %#08x, type = %d\n",
+		 sector_count, drive_type );
 }
 
 /**
@@ -88,6 +98,7 @@ static void int13_extension_check ( struct bootapp_callback_params *params ) {
 	params->bx = 0xaa55;
 	params->cx = INT13_EXTENSION_LINEAR;
 	params->ah = INT13_EXTENSION_VER_1_X;
+	printf ( "Extensions installation check\n" );
 }
 
 /**
@@ -105,8 +116,15 @@ int13_get_extended_parameters ( struct bootapp_callback_params *params ) {
 	memset ( disk_params, 0, sizeof ( *disk_params ) );
 	disk_params->bufsize = sizeof ( *disk_params );
 	disk_params->flags = INT13_FL_DMA_TRANSPARENT;
-	disk_params->sectors = ( MAX_SECTOR + 1 );
+	disk_params->cylinders = VDISK_CYLINDERS;
+	disk_params->heads = VDISK_HEADS;
+	disk_params->sectors_per_track = VDISK_SECTORS_PER_TRACK;
+	disk_params->sectors = VDISK_COUNT;
 	disk_params->sector_size = VDISK_BLKSIZE;
+	printf ( "Get extended parameters: C/H/S = %d/%d/%d, sectors = "
+		 "%#08llx (%d bytes)\n", disk_params->cylinders,
+		 disk_params->heads, disk_params->sectors_per_track,
+		 disk_params->sectors, disk_params->sector_size );
 
 	/* Success */
 	params->ah = 0;
@@ -121,18 +139,14 @@ int13_get_extended_parameters ( struct bootapp_callback_params *params ) {
 static void int13_extended_read ( struct bootapp_callback_params *params ) {
 	struct int13_disk_address *disk_address;
 	void *data;
-	int rc;
 
 	/* Read from emulated disk */
 	disk_address = REAL_PTR ( params->ds, params->si );
 	data = REAL_PTR ( disk_address->buffer.segment,
 			  disk_address->buffer.offset );
-	if ( ( rc = vdisk_read ( disk_address->lba, disk_address->count,
-				 data ) ) != 0 ) {
-		params->ah = INT13_STATUS_READ_ERROR;
-		params->eflags |= CF;
-		return;
-	}
+	printf ( "Read %#llx+%#x to %p\n", disk_address->lba,
+		 disk_address->count, data );
+	vdisk_read ( disk_address->lba, disk_address->count, data );
 
 	/* Success */
 	params->ah = 0;

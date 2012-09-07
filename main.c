@@ -30,6 +30,7 @@
 #include "wimboot.h"
 #include "peloader.h"
 #include "int13.h"
+#include "vdisk.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -63,7 +64,7 @@ static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
 
 	/* Intercept INT 13 calls for the emulated drive */
 	if ( ( params->vector.interrupt == 0x13 ) &&
-	     ( params->dl == EMULATED_DRIVE ) ) {
+	     ( params->dl == VDISK_DRIVE ) ) {
 		emulate_int13 ( params );
 	} else {
 		call_interrupt ( params );
@@ -79,7 +80,7 @@ static struct bootapp_callback_functions callback_fns = {
 /** Real-mode callbacks */
 static struct bootapp_callback callback = {
 	.fns = &callback_fns,
-	.drive = EMULATED_DRIVE,
+	.drive = VDISK_DRIVE,
 };
 
 /** Boot application descriptor set */
@@ -134,14 +135,14 @@ static struct {
 		.len = sizeof ( bootapps.wtf3 ),
 		.flags = 0x00010000,
 		.xxx = 0x01,
-		.mbr_signature = 0x12345678,
+		.mbr_signature = VDISK_SIGNATURE,
 	},
 	.wtf3_copy = {
 		.version = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
 		.flags = 0x00010000,
 		.xxx = 0x01,
-		.mbr_signature = 0x12345678,
+		.mbr_signature = VDISK_SIGNATURE,
 	},
 	.callback = {
 		.callback = &callback,

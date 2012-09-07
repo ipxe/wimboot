@@ -71,24 +71,8 @@
 /** DMA boundary errors handled transparently */
 #define INT13_FL_DMA_TRANSPARENT 	0x01
 
-/** Drive number for emulated drive */
-#define EMULATED_DRIVE 0x80
-
-/** Maximum sector number */
-#define MAX_SECTOR 0xffffffffULL
-
-/** Maximum cylinder number */
-#define MAX_CHS_CYLINDER 1023
-
-/** Maximum head number */
-#define MAX_CHS_HEAD 254
-
-/** Maximum sector number */
-#define MAX_CHS_SECTOR 63
-
 /** BIOS drive counter */
-#define BIOS_DRIVE_COUNT \
-	( *( ( uint8_t * ) REAL_PTR ( 0x40, 0x75 ) ) )
+#define INT13_DRIVE_COUNT ( *( ( uint8_t * ) REAL_PTR ( 0x40, 0x75 ) ) )
 
 /** An INT 13 disk address packet */
 struct int13_disk_address {
