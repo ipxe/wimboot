@@ -120,7 +120,7 @@ int13_get_extended_parameters ( struct bootapp_callback_params *params ) {
 	disk_params->heads = VDISK_HEADS;
 	disk_params->sectors_per_track = VDISK_SECTORS_PER_TRACK;
 	disk_params->sectors = VDISK_COUNT;
-	disk_params->sector_size = VDISK_BLKSIZE;
+	disk_params->sector_size = VDISK_SECTOR_SIZE;
 	printf ( "Get extended parameters: C/H/S = %d/%d/%d, sectors = "
 		 "%#08llx (%d bytes)\n", disk_params->cylinders,
 		 disk_params->heads, disk_params->sectors_per_track,
@@ -144,8 +144,8 @@ static void int13_extended_read ( struct bootapp_callback_params *params ) {
 	disk_address = REAL_PTR ( params->ds, params->si );
 	data = REAL_PTR ( disk_address->buffer.segment,
 			  disk_address->buffer.offset );
-	printf ( "Read %#llx+%#x to %p\n", disk_address->lba,
-		 disk_address->count, data );
+	printf ( "Read to %p from %#llx+%#x\n",
+		 data, disk_address->lba, disk_address->count );
 	vdisk_read ( disk_address->lba, disk_address->count, data );
 
 	/* Success */

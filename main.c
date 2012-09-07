@@ -133,16 +133,16 @@ static struct {
 	.wtf3 = {
 		.flags = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
-		.boot_partition_offset = ( VDISK_VBR * VDISK_BLKSIZE ),
+		.boot_partition_offset = ( VDISK_VBR_LBA * VDISK_SECTOR_SIZE ),
 		.xxx = 0x01,
-		.mbr_signature = VDISK_SIGNATURE,
+		.mbr_signature = VDISK_MBR_SIGNATURE,
 	},
 	.wtf3_copy = {
 		.flags = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
-		.boot_partition_offset = ( VDISK_VBR * VDISK_BLKSIZE ),
+		.boot_partition_offset = ( VDISK_VBR_LBA * VDISK_SECTOR_SIZE ),
 		.xxx = 0x01,
-		.mbr_signature = VDISK_SIGNATURE,
+		.mbr_signature = VDISK_MBR_SIGNATURE,
 	},
 	.callback = {
 		.callback = &callback,
