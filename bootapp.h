@@ -266,16 +266,16 @@ struct bootapp_entry_wtf2_descriptor {
 
 /** ??? */
 struct bootapp_entry_wtf3_descriptor {
-	/** Version */
-	uint32_t version;
+	/** Flags */
+	uint32_t flags;
 	/** Reserved */
 	uint32_t reserved_0x04;
 	/** Length of descriptor */
 	uint32_t len;
 	/** Reserved */
 	uint32_t reserved_0x0c;
-	/** Flags */
-	uint32_t flags;
+	/** Boot partition offset (in bytes) */
+	uint32_t boot_partition_offset;
 	/** Reserved */
 	uint8_t reserved_0x14[16];
 	/** MBR signature present? */

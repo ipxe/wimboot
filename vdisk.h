@@ -51,7 +51,7 @@
 #define VDISK_SIGNATURE 0xc0ffeeee
 
 /** Master Boot Record LBA */
-#define VDISK_MBR_LBA 0
+#define VDISK_MBR_LBA 0x00000000
 
 /** Master Boot Record count */
 #define VDISK_MBR_COUNT 1
@@ -96,7 +96,7 @@ struct vdisk_mbr {
 #define VDISK_MBR_TYPE_FAT32 0x0c
 
 /** Volume Boot Record LBA */
-#define VDISK_VBR 0x80
+#define VDISK_VBR 0x00000001
 
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
 

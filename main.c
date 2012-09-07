@@ -131,16 +131,16 @@ static struct {
 			       sizeof ( bootapps.wtf3 ) ),
 	},
 	.wtf3 = {
-		.version = 0x00000006,
+		.flags = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
-		.flags = 0x00010000,
+		.boot_partition_offset = ( VDISK_VBR * VDISK_BLKSIZE ),
 		.xxx = 0x01,
 		.mbr_signature = VDISK_SIGNATURE,
 	},
 	.wtf3_copy = {
-		.version = 0x00000006,
+		.flags = 0x00000006,
 		.len = sizeof ( bootapps.wtf3 ),
-		.flags = 0x00010000,
+		.boot_partition_offset = ( VDISK_VBR * VDISK_BLKSIZE ),
 		.xxx = 0x01,
 		.mbr_signature = VDISK_SIGNATURE,
 	},
@@ -175,6 +175,7 @@ int main ( void ) {
 		page_len ( initrd, initrd + initrd_len );
 
 	/* Jump to PE image */
+	printf ( "Entering PE with parameters at %p\n", &bootapps );
 	pe.entry ( &bootapps.bootapp );
 
 	/* Die */
