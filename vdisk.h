@@ -73,6 +73,11 @@
 /** Number of sectors */
 #define VDISK_COUNT ( VDISK_PARTITION_LBA + VDISK_PARTITION_COUNT )
 
+/** Calculate sector from cluster */
+#define VDISK_CLUSTER_SECTOR( cluster )					\
+	( ( ( (cluster) - 2 ) * VDISK_CLUSTER_COUNT ) +			\
+	  VDISK_RESERVED_SECTORS + VDISK_SECTORS_PER_FAT )
+
 /*****************************************************************************
  *
  * Master Boot Record
@@ -83,7 +88,7 @@
 /** Master Boot Record LBA */
 #define VDISK_MBR_LBA 0x00000000
 
-/** Master Boot Record count */
+/** Master Boot Record sector count */
 #define VDISK_MBR_COUNT 1
 
 /** Partition table entry */
@@ -138,7 +143,7 @@ struct vdisk_mbr {
 /** Volume Boot Record LBA */
 #define VDISK_VBR_LBA VDISK_PARTITION_LBA
 
-/** Volume Boot Record count */
+/** Volume Boot Record sector count */
 #define VDISK_VBR_COUNT 1
 
 /** Volume Boot Record */
@@ -248,7 +253,7 @@ struct vdisk_vbr {
 /** FSInfo LBA */
 #define VDISK_FSINFO_LBA ( VDISK_VBR_LBA + VDISK_FSINFO_SECTOR )
 
-/** FSInfo count */
+/** FSInfo sector count */
 #define VDISK_FSINFO_COUNT 1
 
 /** FSInfo */
@@ -294,18 +299,27 @@ struct vdisk_fsinfo {
 /** Backup Volume Boot Record LBA */
 #define VDISK_BACKUP_VBR_LBA ( VDISK_VBR_LBA + VDISK_BACKUP_VBR_SECTOR )
 
-/** Backup Volume Boot Record count */
+/** Backup Volume Boot Record sector count */
 #define VDISK_BACKUP_VBR_COUNT 1
 
 /*****************************************************************************
  *
- * Root directory
+ * File Allocation Table
  *
  *****************************************************************************
  */
 
-/** Root directory cluster */
-#define VDISK_ROOT_CLUSTER 2
+/** FAT sector */
+#define VDISK_FAT_SECTOR VDISK_RESERVED_SECTORS
+
+/** FAT LBA */
+#define VDISK_FAT_LBA ( VDISK_VBR_LBA + VDISK_FAT_SECTOR )
+
+/** FAT sector count */
+#define VDISK_FAT_COUNT VDISK_SECTORS_PER_FAT
+
+/** FAT end marker */
+#define VDISK_FAT_END_MARKER 0x0ffffff8
 
 /*****************************************************************************
  *
@@ -347,9 +361,94 @@ struct vdisk_directory_entry {
 /** Directory entry attributes */
 enum vdisk_directory_entry_attributes {
 	VDISK_READ_ONLY = 0x01,
+	VDISK_VOLUME_LABEL = 0x08,
 	VDISK_DIRECTORY = 0x10,
 };
 
+/** Number of directory entries per sector */
+#define VDISK_DIR_PER_SECTOR					\
+	( VDISK_SECTOR_SIZE /					\
+	  sizeof ( struct vdisk_directory_entry ) )
+
+/** A directory
+ *
+ * We limit ourselves to 32 entries per directory (i.e. a single sector).
+ */
+struct vdisk_directory {
+	/** Entries */
+	struct vdisk_directory_entry entry[VDISK_DIR_PER_SECTOR];
+} __attribute__ (( packed ));
+
+/*****************************************************************************
+ *
+ * Root directory
+ *
+ *****************************************************************************
+ */
+
+/** Root directory cluster */
+#define VDISK_ROOT_CLUSTER 2
+
+/** Root directory sector */
+#define VDISK_ROOT_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_ROOT_CLUSTER )
+
+/** Root directory LBA */
+#define VDISK_ROOT_LBA ( VDISK_VBR_LBA + VDISK_ROOT_SECTOR )
+
+/** Root directory sector count */
+#define VDISK_ROOT_COUNT 1
+
+/*****************************************************************************
+ *
+ * Boot directory
+ *
+ *****************************************************************************
+ */
+
+/** Boot directory cluster */
+#define VDISK_BOOT_CLUSTER 3
+
+/** Boot directory sector */
+#define VDISK_BOOT_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_BOOT_CLUSTER )
+
+/** Boot directory LBA */
+#define VDISK_BOOT_LBA ( VDISK_VBR_LBA + VDISK_BOOT_SECTOR )
+
+/** Boot directory sector count */
+#define VDISK_BOOT_COUNT 1
+
+/*****************************************************************************
+ *
+ * Files
+ *
+ *****************************************************************************
+ */
+
+/** Maximum file size */
+#define VDISK_FILE_MAX_SIZE 0x100000000ULL /* max for 32-bit address space */
+
+/** Maximum file cluster count */
+#define VDISK_FILE_MAX_CLUSTERS ( VDISK_FILE_MAX_SIZE / VDISK_CLUSTER_SIZE )
+
+/** Starting cluster number for file */
+#define VDISK_FILE_CLUSTER( idx ) ( ( (idx) + 1 ) * VDISK_FILE_MAX_CLUSTERS )
+
+/** A virtual file */
+struct vdisk_file {
+	/** Filename */
+	char filename[8];
+	/** Extension */
+	char extension[3];
+	/** Data */
+	void *data;
+	/** Length */
+	size_t len;
+};
+
+/** Maximum number of virtual files */
+#define VDISK_MAX_NUM_FILES VDISK_DIR_PER_SECTOR
+
+extern struct vdisk_file vdisk_files[VDISK_DIR_PER_SECTOR];
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
 
 #endif /* _VDISK_H */

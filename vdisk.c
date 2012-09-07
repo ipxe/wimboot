@@ -29,6 +29,9 @@
 #include "wimboot.h"
 #include "vdisk.h"
 
+/** Virtual files */
+struct vdisk_file vdisk_files[VDISK_MAX_NUM_FILES];
+
 /**
  * Read from virtual Master Boot Record
  *
@@ -107,6 +110,114 @@ static void vdisk_fsinfo ( uint64_t lba __attribute__ (( unused )),
 	fsinfo->magic3 = VDISK_FSINFO_MAGIC3;
 }
 
+/**
+ * Read from virtual FAT
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
+	uint32_t *next = data;
+	uint32_t start;
+	uint32_t end;
+	uint32_t file_end_marker;
+	unsigned int i;
+
+	/* Calculate window within FAT */
+	start = ( ( lba - VDISK_FAT_LBA ) *
+		  ( VDISK_SECTOR_SIZE / sizeof ( *next ) ) );
+	end = ( start + ( count * ( VDISK_SECTOR_SIZE / sizeof ( *next ) ) ) );
+	next -= start;
+
+	/* Start by marking each cluster as chaining to the next */
+	for ( i = start ; i < end ; i++ )
+		next[i] = ( i + 1 );
+
+	/* Add first-sector special values, if applicable */
+	if ( start == 0 ) {
+		next[0] = ( ( VDISK_FAT_END_MARKER & ~0xff ) |
+			    VDISK_VBR_MEDIA );
+		next[1] = VDISK_FAT_END_MARKER;
+		next[VDISK_ROOT_CLUSTER] = VDISK_FAT_END_MARKER;
+		next[VDISK_BOOT_CLUSTER] = VDISK_FAT_END_MARKER;
+	}
+
+	/* Add end-of-file markers, if applicable */
+	for ( i = 0 ; i < VDISK_MAX_NUM_FILES ; i++ ) {
+		if ( vdisk_files[i].data ) {
+			file_end_marker = ( VDISK_FILE_CLUSTER ( i ) +
+					    ( ( vdisk_files[i].len - 1 ) /
+					      VDISK_CLUSTER_SIZE ) );
+			if ( ( file_end_marker >= start ) &&
+			     ( file_end_marker < end ) ) {
+				next[file_end_marker] = VDISK_FAT_END_MARKER;
+			}
+		}
+	}
+}
+
+/**
+ * Read from virtual root directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
+			 unsigned int count __attribute__ (( unused )),
+			 void *data ) {
+	struct vdisk_directory *dir = data;
+	static const struct vdisk_directory_entry root[] = {
+		{
+			.filename = "BOOT    ",
+			.extension = "   ",
+			.attr = VDISK_DIRECTORY,
+			.cluster_high = ( VDISK_BOOT_CLUSTER >> 16 ),
+			.cluster_low = ( VDISK_BOOT_CLUSTER & 0xffff ),
+		},
+	};
+
+	/* Construct root directory */
+	memset ( dir, 0, sizeof ( *dir ) );
+	memcpy ( dir, root, sizeof ( root ) );
+}
+
+/**
+ * Read from virtual boot directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
+			 unsigned int count __attribute__ (( unused )),
+			 void *data ) {
+	struct vdisk_directory *dir = data;
+	struct vdisk_file *file;
+	struct vdisk_directory_entry *dirent;
+	uint32_t cluster;
+	unsigned int i;
+
+	/* Construct boot directory */
+	memset ( dir, 0, sizeof ( *dir ) );
+	for ( i = 0 ; i < VDISK_MAX_NUM_FILES ; i++ ) {
+		file = &vdisk_files[i];
+		dirent = &dir->entry[i];
+		if ( file->data ) {
+			memcpy ( dirent->filename, file->filename,
+				 sizeof ( dirent->filename ) );
+			memcpy ( dirent->extension, file->extension,
+				 sizeof ( dirent->extension ) );
+			dirent->attr = VDISK_READ_ONLY;
+			dirent->size = file->len;
+			cluster = VDISK_FILE_CLUSTER ( i );
+			dirent->cluster_high = ( cluster >> 16 );
+			dirent->cluster_low = ( cluster & 0xffff );
+		}
+	}
+}
+
 /** A virtual disk region */
 struct vdisk_region {
 	/** Name */
@@ -150,6 +261,24 @@ static struct vdisk_region vdisk_regions[] = {
 		.lba = VDISK_BACKUP_VBR_LBA,
 		.count = VDISK_BACKUP_VBR_COUNT,
 		.read = vdisk_vbr,
+	},
+	{
+		.name = "FAT",
+		.lba = VDISK_FAT_LBA,
+		.count = VDISK_FAT_COUNT,
+		.read = vdisk_fat,
+	},
+	{
+		.name = "Root",
+		.lba = VDISK_ROOT_LBA,
+		.count = VDISK_ROOT_COUNT,
+		.read = vdisk_root,
+	},
+	{
+		.name = "Boot",
+		.lba = VDISK_BOOT_LBA,
+		.count = VDISK_BOOT_COUNT,
+		.read = vdisk_boot,
 	},
 };
 

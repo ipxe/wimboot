@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include "wimboot.h"
 #include "peloader.h"
 #include "int13.h"
@@ -158,6 +159,14 @@ static struct {
  */
 int main ( void ) {
 	struct loaded_pe pe;
+
+	/* Construct file list */
+	memcpy ( vdisk_files[0].filename, "BCD     ",
+		 sizeof ( vdisk_files[0].filename ) );
+	memcpy ( vdisk_files[0].extension, "   ",
+		 sizeof ( vdisk_files[0].extension ) );
+	vdisk_files[0].data = initrd;
+	vdisk_files[0].len = initrd_len;
 
 	/* Load PE image to memory */
 	load_pe ( initrd, initrd_len, &pe );
