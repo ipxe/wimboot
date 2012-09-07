@@ -30,7 +30,7 @@
 #include "vdisk.h"
 
 /** Virtual files */
-struct vdisk_file vdisk_files[VDISK_MAX_NUM_FILES];
+struct vdisk_file vdisk_files[VDISK_MAX_FILES];
 
 /**
  * Read from virtual Master Boot Record
@@ -72,7 +72,7 @@ static void vdisk_vbr ( uint64_t lba __attribute__ (( unused )),
 	memcpy ( vbr->oemid, VDISK_VBR_OEMID, sizeof ( vbr->oemid ) );
 	vbr->bytes_per_sector = VDISK_SECTOR_SIZE;
 	vbr->sectors_per_cluster = VDISK_CLUSTER_COUNT;
-	vbr->reserved_sectors = VDISK_RESERVED_SECTORS;
+	vbr->reserved_sectors = VDISK_RESERVED_COUNT;
 	vbr->fats = 1;
 	vbr->media = VDISK_VBR_MEDIA;
 	vbr->sectors_per_track = VDISK_SECTORS_PER_TRACK;
@@ -144,7 +144,7 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 	}
 
 	/* Add end-of-file markers, if applicable */
-	for ( i = 0 ; i < VDISK_MAX_NUM_FILES ; i++ ) {
+	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
 		if ( vdisk_files[i].data ) {
 			file_end_marker = ( VDISK_FILE_CLUSTER ( i ) +
 					    ( ( vdisk_files[i].len - 1 ) /
@@ -201,7 +201,7 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 
 	/* Construct boot directory */
 	memset ( dir, 0, sizeof ( *dir ) );
-	for ( i = 0 ; i < VDISK_MAX_NUM_FILES ; i++ ) {
+	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
 		file = &vdisk_files[i];
 		dirent = &dir->entry[i];
 		if ( file->data ) {

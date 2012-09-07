@@ -44,14 +44,40 @@
 /** Sector size (in bytes) */
 #define VDISK_SECTOR_SIZE 512
 
+/** Partition start LBA */
+#define VDISK_PARTITION_LBA 128
+
 /** Cluster size (in sectors) */
 #define VDISK_CLUSTER_COUNT 64
 
 /** Cluster size (in bytes) */
 #define VDISK_CLUSTER_SIZE ( VDISK_CLUSTER_COUNT * VDISK_SECTOR_SIZE )
 
-/** Number of FAT clusters */
+/** Number of clusters */
 #define VDISK_CLUSTERS 0x03ffc000ULL /* Fill 2TB disk */
+
+/** Maximum number of virtual files
+ *
+ * Must not exceed the number of directory entries within a single
+ * sector.
+ */
+#define VDISK_MAX_FILES VDISK_DIR_PER_SECTOR
+
+/** Maximum file size (in sectors) */
+#define VDISK_FILE_COUNT 0x800000UL /* max for 32-bit address space */
+
+/** Maximum file size (in clusters) */
+#define VDISK_FILE_CLUSTERS ( VDISK_FILE_COUNT / VDISK_CLUSTER_COUNT )
+
+/** File starting LBA */
+#define VDISK_FILE_LBA( idx ) ( ( (idx) + 1 ) * VDISK_FILE_COUNT )
+
+/** File index from LBA */
+#define VDISK_FILE_IDX( lba ) ( ( (lba) / VDISK_FILE_COUNT ) - 1 )
+
+/** File offset (in bytes) from LBA */
+#define VDISK_FILE_OFFSET( lba )					\
+	( ( (lba) % VDISK_FILE_COUNT ) * VDISK_SECTOR_SIZE )
 
 /** Number of sectors allocated for FAT */
 #define VDISK_SECTORS_PER_FAT						\
@@ -60,14 +86,18 @@
 	  * VDISK_CLUSTER_COUNT )
 
 /** Number of reserved sectors */
-#define VDISK_RESERVED_SECTORS 64
+#define VDISK_RESERVED_COUNT VDISK_CLUSTER_COUNT
 
-/** Partition start LBA */
-#define VDISK_PARTITION_LBA VDISK_CLUSTER_COUNT
+/** Starting cluster number for file */
+#define VDISK_FILE_CLUSTER( idx )					\
+	( ( ( ( VDISK_FILE_COUNT - VDISK_PARTITION_LBA -		\
+		VDISK_RESERVED_COUNT - VDISK_SECTORS_PER_FAT ) /	\
+	      VDISK_CLUSTER_COUNT ) + 2 ) +				\
+	  ( (idx) * VDISK_FILE_CLUSTERS ) )
 
 /** Total number of sectors within partition */
 #define VDISK_PARTITION_COUNT						\
-	( VDISK_RESERVED_SECTORS + VDISK_SECTORS_PER_FAT +		\
+	( VDISK_RESERVED_COUNT + VDISK_SECTORS_PER_FAT +		\
 	  ( VDISK_CLUSTERS * VDISK_CLUSTER_COUNT ) )
 
 /** Number of sectors */
@@ -76,7 +106,7 @@
 /** Calculate sector from cluster */
 #define VDISK_CLUSTER_SECTOR( cluster )					\
 	( ( ( (cluster) - 2 ) * VDISK_CLUSTER_COUNT ) +			\
-	  VDISK_RESERVED_SECTORS + VDISK_SECTORS_PER_FAT )
+	  VDISK_RESERVED_COUNT + VDISK_SECTORS_PER_FAT )
 
 /*****************************************************************************
  *
@@ -310,7 +340,7 @@ struct vdisk_fsinfo {
  */
 
 /** FAT sector */
-#define VDISK_FAT_SECTOR VDISK_RESERVED_SECTORS
+#define VDISK_FAT_SECTOR VDISK_RESERVED_COUNT
 
 /** FAT LBA */
 #define VDISK_FAT_LBA ( VDISK_VBR_LBA + VDISK_FAT_SECTOR )
@@ -424,15 +454,6 @@ struct vdisk_directory {
  *****************************************************************************
  */
 
-/** Maximum file size */
-#define VDISK_FILE_MAX_SIZE 0x100000000ULL /* max for 32-bit address space */
-
-/** Maximum file cluster count */
-#define VDISK_FILE_MAX_CLUSTERS ( VDISK_FILE_MAX_SIZE / VDISK_CLUSTER_SIZE )
-
-/** Starting cluster number for file */
-#define VDISK_FILE_CLUSTER( idx ) ( ( (idx) + 1 ) * VDISK_FILE_MAX_CLUSTERS )
-
 /** A virtual file */
 struct vdisk_file {
 	/** Filename */
@@ -444,9 +465,6 @@ struct vdisk_file {
 	/** Length */
 	size_t len;
 };
-
-/** Maximum number of virtual files */
-#define VDISK_MAX_NUM_FILES VDISK_DIR_PER_SECTOR
 
 extern struct vdisk_file vdisk_files[VDISK_DIR_PER_SECTOR];
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
