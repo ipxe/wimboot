@@ -89,6 +89,6 @@ idt:
 	.section ".bss", "aw", @nobits
 	.align	8
 _stack:
-	.space	65536
+	.space	( 256 * 1024 )
 	.size	_stack, . - _stack
 _estack:
