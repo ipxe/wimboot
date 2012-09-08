@@ -457,9 +457,9 @@ struct vdisk_directory {
 /** A virtual file */
 struct vdisk_file {
 	/** Filename (must be NUL-terminated) */
-	char name[16];
+	const char *name;
 	/** Data */
-	void *data;
+	const void *data;
 	/** Length */
 	size_t len;
 };

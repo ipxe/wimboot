@@ -88,6 +88,14 @@ static inline unsigned int page_len ( const void *start, const void *end ) {
 	return ( page_end ( end ) - page_start ( start ) );
 }
 
+/**
+ * Bochs magic breakpoint
+ *
+ */
+static inline void bochsbp ( void ) {
+	__asm__ __volatile__ ( "xchgw %bx, %bx" );
+}
+
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
 extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))

@@ -197,7 +197,7 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 	struct vdisk_directory *dir = data;
 	struct vdisk_file *file;
 	struct vdisk_directory_entry *dirent;
-	char *source;
+	const char *source;
 	char *dest;
 	size_t remaining;
 	char c;
@@ -210,6 +210,10 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 		file = &vdisk_files[i];
 		dirent = &dir->entry[i];
 		if ( file->data ) {
+			memset ( dirent->filename, ' ',
+				 sizeof ( dirent->filename ) );
+			memset ( dirent->extension, ' ',
+				 sizeof ( dirent->extension ) );
 			source = file->name;
 			dest = dirent->filename;
 			remaining = sizeof ( dirent->filename );

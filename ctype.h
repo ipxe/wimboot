@@ -32,7 +32,7 @@ static inline int islower ( int c ) {
 }
 
 static inline int isupper ( int c ) {
-	return ( ( c >= 'a' ) && ( c <= 'z' ) );
+	return ( ( c >= 'A' ) && ( c <= 'Z' ) );
 }
 
 static inline int toupper ( int c ) {
@@ -41,5 +41,7 @@ static inline int toupper ( int c ) {
 		c -= ( 'a' - 'A' );
 	return c;
 }
+
+extern int isspace ( int c );
 
 #endif /* _CTYPE_H */

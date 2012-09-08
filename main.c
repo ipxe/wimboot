@@ -33,6 +33,7 @@
 #include "peloader.h"
 #include "int13.h"
 #include "vdisk.h"
+#include "cpio.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -41,13 +42,19 @@ extern char _start[];
 extern char _end[];
 
 /** Command line */
-char *cmdline;
+const char *cmdline;
 
 /** initrd */
-void *initrd;
+const void *initrd;
 
 /** Length of initrd */
 size_t initrd_len;
+
+/** bootmgr.exe image */
+const void *bootmgr;
+
+/** bootmgr.exe length */
+size_t bootmgr_len;
 
 /** Memory regions */
 enum {
@@ -155,24 +162,53 @@ static struct {
 };
 
 /**
+ * File handler
+ *
+ * @v name		File name
+ * @v data		File data
+ * @v len		Length
+ * @ret rc		Return status code
+ */
+static int add_file ( const char *name, const void *data, size_t len ) {
+	static unsigned int idx = 0;
+
+	/* Sanity check */
+	if ( idx >= VDISK_MAX_FILES ) {
+		printf ( "Too many files\n" );
+		return -1;
+	}
+
+	/* Store file */
+	printf ( "Loading %s\n", name );
+	vdisk_files[idx].name = name;
+	vdisk_files[idx].data = data;
+	vdisk_files[idx].len = len;
+	idx++;
+
+	/* Check for bootmgr.exe */
+	if ( strcasecmp ( name, "bootmgr.exe" ) == 0 ) {
+		bootmgr = data;
+		bootmgr_len = len;
+	}
+
+	return 0;
+}
+
+/**
  * Main entry point
  *
  */
 int main ( void ) {
 	struct loaded_pe pe;
 
-	/* Construct file list */
-	snprintf ( vdisk_files[0].name, sizeof ( vdisk_files[0].name ),
-		   "%s", "BCD" );
-	vdisk_files[0].data = initrd;
-	vdisk_files[0].len = initrd_len;
-	snprintf ( vdisk_files[1].name, sizeof ( vdisk_files[1].name ),
-		   "%s", "bootmgr.exe" );
-	vdisk_files[0].data = initrd;
-	vdisk_files[0].len = initrd_len;
+	/* Extract files from initrd */
+	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
+		die ( "FATAL: could not extract initrd files\n" );
 
-	/* Load PE image to memory */
-	if ( load_pe ( initrd, initrd_len, &pe ) < 0 )
+	/* Load bootmgr.exe to memory */
+	if ( ! bootmgr )
+		die ( "FATAL: no bootmgr.exe\n" );
+	if ( load_pe ( bootmgr, bootmgr_len, &pe ) != 0 )
 		die ( "FATAL: Could not load PE image\n" );
 
 	/* Complete boot application descriptor set */

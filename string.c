@@ -24,7 +24,9 @@
  *
  */
 
+#include <stdint.h>
 #include <string.h>
+#include "ctype.h"
 
 /**
  * Copy memory area
@@ -82,4 +84,128 @@ void * memset ( void *dest, int c, size_t len ) {
 			       : "0" ( edi ), "1" ( eax ), "2" ( len & 3 )
 			       : "memory" );
 	return dest;
+}
+
+/**
+ * Compare memory areas
+ *
+ * @v src1		First source area
+ * @v src2		Second source area
+ * @v len		Length
+ * @ret diff		Difference
+ */
+int memcmp ( const void *src1, const void *src2, size_t len ) {
+	const uint8_t *bytes1 = src1;
+	const uint8_t *bytes2 = src2;
+	int diff;
+
+	while ( len-- ) {
+		if ( ( diff = ( *(bytes1++) - *(bytes2++) ) ) )
+			return diff;
+	}
+	return 0;
+}
+
+/**
+ * Compare two strings, case-insensitively
+ *
+ * @v str1		First string
+ * @v str2		Second string
+ * @ret diff		Difference
+ */
+int strcasecmp ( const char *str1, const char *str2 ) {
+	int c1;
+	int c2;
+
+	do {
+		c1 = toupper ( *(str1++) );
+		c2 = toupper ( *(str2++) );
+	} while ( ( c1 != '\0' ) && ( c1 == c2 ) );
+
+	return ( c1 - c2 );
+}
+
+/**
+ * Check to see if character is a space
+ *
+ * @v c                 Character
+ * @ret isspace         Character is a space
+ */
+int isspace ( int c ) {
+        switch ( c ) {
+        case ' ' :
+        case '\f' :
+        case '\n' :
+        case '\r' :
+        case '\t' :
+        case '\v' :
+                return 1;
+        default:
+                return 0;
+        }
+}
+
+/**
+ * Convert a string to an unsigned integer
+ *
+ * @v nptr		String
+ * @v endptr		End pointer to fill in (or NULL)
+ * @v base		Numeric base
+ * @ret val		Value
+ */
+unsigned long strtoul ( const char *nptr, char **endptr, int base ) {
+	unsigned long val = 0;
+	int negate = 0;
+	unsigned int digit;
+
+	/* Skip any leading whitespace */
+	while ( isspace ( *nptr ) )
+		nptr++;
+
+	/* Parse sign, if present */
+	if ( *nptr == '+' ) {
+		nptr++;
+	} else if ( *nptr == '-' ) {
+		nptr++;
+		negate = 1;
+	}
+
+	/* Parse base */
+	if ( base == 0 ) {
+
+		/* Default to decimal */
+		base = 10;
+
+		/* Check for octal or hexadecimal markers */
+		if ( *nptr == '0' ) {
+			nptr++;
+			base = 8;
+			if ( ( *nptr | 0x20 ) == 'x' ) {
+				nptr++;
+				base = 16;
+			}
+		}
+	}
+
+	/* Parse digits */
+	while ( 1 ) {
+		digit = *(nptr++);
+		if ( digit >= 'a' ) {
+			digit = ( digit - 'a' + 10 );
+		} else if ( digit >= 'A' ) {
+			digit = ( digit - 'A' + 10 );
+		} else if ( digit <= '9' ) {
+			digit = ( digit - '0' );
+		}
+		if ( digit >= ( unsigned int ) base )
+			break;
+		val = ( ( val * base ) + digit );
+	}
+
+	/* Record end marker, if applicable */
+	if ( endptr )
+		*endptr = ( ( char * ) nptr );
+
+	/* Return value */
+	return ( negate ? -val : val );
 }
