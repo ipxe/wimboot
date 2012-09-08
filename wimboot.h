@@ -90,6 +90,9 @@ static inline unsigned int page_len ( const void *start, const void *end ) {
 
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
+extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))
+die ( const char *fmt, ... );
+extern void __attribute__ (( noreturn )) reboot ( void );
 
 #endif /* ASSEMBLY */
 

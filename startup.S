@@ -26,6 +26,11 @@
 
 #include "wimboot.h"
 
+#define WARM_REBOOT_FLAG 0x0472
+#define WARM_REBOOT_MAGIC 0x1234
+#define KC_CMD 0x64
+#define KC_CMD_RESET 0xfe
+
 	.arch	i386
 
 	/* Startup code */
@@ -48,9 +53,23 @@ startup:
 	call	main
 
 	/* Should never return */
+	jmp	reboot
+	.size	startup, . - startup
+
+	/* Reboot system */
+	.section ".text", "ax", @progbits
+	.globl	reboot
+reboot:
+	/* Attempt a warm reboot via the keyboard controller */
+	movw	$WARM_REBOOT_MAGIC, WARM_REBOOT_FLAG
+	movb	$KC_CMD_RESET, %al
+	outb	%al, $KC_CMD
+	/* If that failed, generate a CPU triple fault */
+	int	$0xff
+	/* If even that failed, hang the system */
 1:	hlt
 	jmp	1b
-	.size	startup, . - startup
+	.size	reboot, . - reboot
 
 	/* Global descriptor table */
 	.section ".rodata16", "aw", @progbits

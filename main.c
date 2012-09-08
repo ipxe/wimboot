@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "wimboot.h"
@@ -110,7 +111,7 @@ static struct {
 		.arch = BOOTAPP_ARCH_I386,
 		.memory = offsetof ( typeof ( bootapps ), memory ),
 		.entry = offsetof ( typeof ( bootapps ), entry ),
-		.xxx = offsetof ( typeof ( bootapps ), wtf3 ),
+		.xxx = offsetof ( typeof ( bootapps ), wtf3_copy ),
 		.callback = offsetof ( typeof ( bootapps ), callback ),
 		.pointless = offsetof ( typeof ( bootapps ), pointless ),
 	},
@@ -171,7 +172,8 @@ int main ( void ) {
 	vdisk_files[0].len = initrd_len;
 
 	/* Load PE image to memory */
-	load_pe ( initrd, initrd_len, &pe );
+	if ( load_pe ( initrd, initrd_len, &pe ) < 0 )
+		die ( "FATAL: Could not load PE image\n" );
 
 	/* Complete boot application descriptor set */
 	bootapps.bootapp.pe_base = pe.base;
@@ -188,9 +190,31 @@ int main ( void ) {
 	/* Jump to PE image */
 	printf ( "Entering PE with parameters at %p\n", &bootapps );
 	pe.entry ( &bootapps.bootapp );
+	die ( "FATAL: PE image returned\n" );
+}
 
-	/* Die */
-	printf ( "FATAL: PE image returned\n" );
+/**
+ * Handle fatal errors
+ *
+ * @v fmt	Error message format string
+ * @v ...	Arguments
+ */
+void die ( const char *fmt, ... ) {
+	struct bootapp_callback_params params;
+	va_list args;
 
-	return 0;
+	/* Print message */
+	va_start ( args, fmt );
+	vprintf ( fmt, args );
+	va_end ( args );
+
+	/* Wait for keypress */
+	printf ( "Press a key to reboot..." );
+	memset ( &params, 0, sizeof ( params ) );
+	params.vector.interrupt = 0x16;
+	call_interrupt ( &params );
+	printf ( "\n" );
+
+	/* Reboot system */
+	reboot();
 }

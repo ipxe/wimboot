@@ -4,6 +4,7 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 #include "wimboot.h"
 
 #define FILE_LICENCE(x)
@@ -50,6 +51,7 @@ int putchar ( int character ) {
 			       : : "a" ( character ) );
 
 	/* Print character to BIOS console */
+	memset ( &params, 0, sizeof ( params ) );
 	params.vector.interrupt = 0x10;
 	params.eax = ( 0x0e00 | character );
 	params.ebx = 0x0007;
