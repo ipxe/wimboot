@@ -53,6 +53,7 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	size_t filesz;
 	size_t memsz;
 	void *end;
+	void *raw_base;
 
 	printf ( "Loading PE executable...\n" );
 
@@ -97,7 +98,17 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 		if ( end < ( section_base + memsz ) )
 			end = ( section_base + memsz );
 	}
-	pe->len = ( end - pe->base );
+	pe->len = ( ( ( end - pe->base ) + opthdr->section_align - 1 )
+		    & ~( opthdr->section_align - 1 ) );
+
+	/* Load copy of raw image into memory immediately after loaded
+	 * sections.  This seems to be used for verification of X.509
+	 * signatures.
+	 */
+	raw_base = ( pe->base + pe->len );
+	memcpy ( raw_base, data, len );
+	pe->len += len;
+	printf ( "...raw copy to %p+%#zx\n", raw_base, len );
 
 	/* Extract entry point */
 	pe->entry = ( pe->base + opthdr->entry );
