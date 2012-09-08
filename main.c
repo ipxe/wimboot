@@ -174,12 +174,12 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 
 	/* Sanity check */
 	if ( idx >= VDISK_MAX_FILES ) {
-		printf ( "Too many files\n" );
+		DBG ( "Too many files\n" );
 		return -1;
 	}
 
 	/* Store file */
-	printf ( "Loading %s\n", name );
+	DBG ( "Loading %s\n", name );
 	vdisk_files[idx].name = name;
 	vdisk_files[idx].data = data;
 	vdisk_files[idx].len = len;
@@ -224,7 +224,7 @@ int main ( void ) {
 		page_len ( initrd, initrd + initrd_len );
 
 	/* Jump to PE image */
-	printf ( "Entering PE with parameters at %p\n", &bootapps );
+	DBG ( "Entering PE with parameters at %p\n", &bootapps );
 	pe.entry ( &bootapps.bootapp );
 	die ( "FATAL: PE image returned\n" );
 }

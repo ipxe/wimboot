@@ -58,9 +58,8 @@ static void int13_get_parameters ( struct bootapp_callback_params *params ) {
 	params->cl = ( ( ( max_cylinder >> 8 ) << 6 ) | max_sector );
 	params->dh = max_head;
 	params->dl = num_drives;
-	printf ( "Get parameters: C/H/S = %d/%d/%d, drives = %d\n",
-		 ( max_cylinder + 1 ), ( max_head + 1 ), max_sector,
-		 num_drives );
+	DBG ( "Get parameters: C/H/S = %d/%d/%d, drives = %d\n",
+	      ( max_cylinder + 1 ), ( max_head + 1 ), max_sector, num_drives );
 
 	/* Success */
 	params->ah = 0;
@@ -80,8 +79,8 @@ static void int13_get_disk_type ( struct bootapp_callback_params *params ) {
 	params->cx = ( sector_count >> 16 );
 	params->dx = ( sector_count & 0xffff );
 	params->ah = drive_type;
-	printf ( "Get disk type: sectors = %#08x, type = %d\n",
-		 sector_count, drive_type );
+	DBG ( "Get disk type: sectors = %#08x, type = %d\n",
+	      sector_count, drive_type );
 }
 
 /**
@@ -98,7 +97,7 @@ static void int13_extension_check ( struct bootapp_callback_params *params ) {
 	params->bx = 0xaa55;
 	params->cx = INT13_EXTENSION_LINEAR;
 	params->ah = INT13_EXTENSION_VER_1_X;
-	printf ( "Extensions installation check\n" );
+	DBG ( "Extensions installation check\n" );
 }
 
 /**
@@ -121,10 +120,10 @@ int13_get_extended_parameters ( struct bootapp_callback_params *params ) {
 	disk_params->sectors_per_track = VDISK_SECTORS_PER_TRACK;
 	disk_params->sectors = VDISK_COUNT;
 	disk_params->sector_size = VDISK_SECTOR_SIZE;
-	printf ( "Get extended parameters: C/H/S = %d/%d/%d, sectors = "
-		 "%#08llx (%d bytes)\n", disk_params->cylinders,
-		 disk_params->heads, disk_params->sectors_per_track,
-		 disk_params->sectors, disk_params->sector_size );
+	DBG ( "Get extended parameters: C/H/S = %d/%d/%d, sectors = %#08llx "
+	      "(%d bytes)\n", disk_params->cylinders, disk_params->heads,
+	      disk_params->sectors_per_track, disk_params->sectors,
+	      disk_params->sector_size );
 
 	/* Success */
 	params->ah = 0;
@@ -182,7 +181,7 @@ void emulate_int13 ( struct bootapp_callback_params *params ) {
 		int13_extended_read ( params );
 		break;
 	default:
-		printf ( "Unrecognised INT 13,%02x\n", command );
+		DBG ( "Unrecognised INT 13,%02x\n", command );
 		params->eflags |= CF;
 		break;
 	}

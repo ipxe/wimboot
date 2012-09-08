@@ -7,6 +7,10 @@ OBJCOPY := objcopy
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -I.
 CFLAGS += -m32 -march=i386
 
+ifneq ($(DEBUG),)
+CFLAGS += -DDEBUG
+endif
+
 all : wimboot
 
 wimboot : wimboot.elf

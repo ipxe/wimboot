@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "wimboot.h"
 #include "cpio.h"
 
 /**
@@ -79,7 +80,7 @@ int cpio_extract ( const void *data, size_t len,
 
 		/* Sanity check */
 		if ( len < sizeof ( *cpio ) ) {
-			printf ( "Truncated CPIO header\n" );
+			DBG ( "Truncated CPIO header\n" );
 			return -1;
 		}
 		cpio = data;
@@ -87,10 +88,7 @@ int cpio_extract ( const void *data, size_t len,
 		/* Check magic */
 		if ( memcmp ( cpio->c_magic, CPIO_MAGIC,
 			      sizeof ( cpio->c_magic ) ) != 0 ) {
-			printf ( "Bad CPIO magic\n" );
-			//
-			printf ( "%p", cpio->c_magic );
-			__asm__ __volatile__ ( "xchgw %bx,%bx" );
+			DBG ( "Bad CPIO magic\n" );
 			return -1;
 		}
 
@@ -103,7 +101,7 @@ int cpio_extract ( const void *data, size_t len,
 		next = ( file_data + cpio_align ( file_len ) );
 		cpio_len = ( next - data );
 		if ( cpio_len > len ) {
-			printf ( "Truncated CPIO file\n" );
+			DBG ( "Truncated CPIO file\n" );
 			return -1;
 		}
 

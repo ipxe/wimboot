@@ -347,7 +347,7 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 	unsigned int frag_count;
 	unsigned int i;
 
-	printf ( "Read to %p from %#llx+%#x: ", data, lba, count );
+	DBG2 ( "Read to %p from %#llx+%#x: ", data, lba, count );
 
 	do {
 		/* Initialise fragment to fill remaining space */
@@ -404,8 +404,8 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 
 		/* Generate data from this region */
 		frag_count = ( frag_end - frag_start );
-		printf ( "%s%s (%#lx)", ( ( frag_start == start ) ? "" : ", " ),
-			 ( name ? name : "empty" ), frag_count );
+		DBG2 ( "%s%s (%#lx)", ( ( frag_start == start ) ? "" : ", " ),
+		       ( name ? name : "empty" ), frag_count );
 		if ( build ) {
 			build ( frag_start, frag_count, data );
 		} else {
@@ -418,5 +418,5 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 
 	} while ( frag_start != end );
 
-	printf ( "\n" );
+	DBG2 ( "\n" );
 }

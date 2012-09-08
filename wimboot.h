@@ -27,6 +27,11 @@
  *
  */
 
+/** Debug switch */
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+
 /** Base segment address
  *
  * We place everything at 2000:0000, since this region is used by the
@@ -95,6 +100,20 @@ static inline unsigned int page_len ( const void *start, const void *end ) {
 static inline void bochsbp ( void ) {
 	__asm__ __volatile__ ( "xchgw %bx, %bx" );
 }
+
+/** Debugging output */
+#define DBG(...) do {						\
+		if ( DEBUG & 1 ) {				\
+			printf ( __VA_ARGS__ );			\
+		}						\
+	} while ( 0 )
+
+/** Verbose debugging output */
+#define DBG2(...) do {						\
+		if ( DEBUG & 2 ) {				\
+			printf ( __VA_ARGS__ );			\
+		}						\
+	} while ( 0 )
 
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
