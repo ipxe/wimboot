@@ -61,7 +61,7 @@
  * Must not exceed the number of directory entries within a single
  * sector.
  */
-#define VDISK_MAX_FILES VDISK_DIR_PER_SECTOR
+#define VDISK_MAX_FILES ( ( int ) VDISK_DIR_PER_SECTOR )
 
 /** Maximum file size (in sectors) */
 #define VDISK_FILE_COUNT 0x800000UL /* max for 32-bit address space */
@@ -456,10 +456,8 @@ struct vdisk_directory {
 
 /** A virtual file */
 struct vdisk_file {
-	/** Filename */
-	char filename[8];
-	/** Extension */
-	char extension[3];
+	/** Filename (must be NUL-terminated) */
+	char name[16];
 	/** Data */
 	void *data;
 	/** Length */

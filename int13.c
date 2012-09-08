@@ -144,8 +144,6 @@ static void int13_extended_read ( struct bootapp_callback_params *params ) {
 	disk_address = REAL_PTR ( params->ds, params->si );
 	data = REAL_PTR ( disk_address->buffer.segment,
 			  disk_address->buffer.offset );
-	printf ( "Read to %p from %#llx+%#x\n",
-		 data, disk_address->lba, disk_address->count );
 	vdisk_read ( disk_address->lba, disk_address->count, data );
 
 	/* Success */

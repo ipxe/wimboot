@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "ctype.h"
 #include "wimboot.h"
 #include "vdisk.h"
 
@@ -196,6 +197,10 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 	struct vdisk_directory *dir = data;
 	struct vdisk_file *file;
 	struct vdisk_directory_entry *dirent;
+	char *source;
+	char *dest;
+	size_t remaining;
+	char c;
 	uint32_t cluster;
 	unsigned int i;
 
@@ -205,10 +210,18 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 		file = &vdisk_files[i];
 		dirent = &dir->entry[i];
 		if ( file->data ) {
-			memcpy ( dirent->filename, file->filename,
-				 sizeof ( dirent->filename ) );
-			memcpy ( dirent->extension, file->extension,
-				 sizeof ( dirent->extension ) );
+			source = file->name;
+			dest = dirent->filename;
+			remaining = sizeof ( dirent->filename );
+			while ( ( c = *(source++) ) ) {
+				if ( c == '.' ) {
+					dest = dirent->extension;
+					remaining = sizeof ( dirent->extension);
+				} else if ( remaining ) {
+					*(dest++) = toupper ( c );
+					remaining--;
+				}
+			}
 			dirent->attr = VDISK_READ_ONLY;
 			dirent->size = file->len;
 			cluster = VDISK_FILE_CLUSTER ( i );
@@ -216,6 +229,32 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 			dirent->cluster_low = ( cluster & 0xffff );
 		}
 	}
+}
+
+/**
+ * Read from virtual file (or empty space)
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_file ( uint64_t lba, unsigned int count, void *data ) {
+	struct vdisk_file *file;
+	size_t offset;
+	size_t len;
+	size_t copy_len;
+	size_t pad_len;
+
+	/* Construct file portion */
+	file = &vdisk_files[ VDISK_FILE_IDX ( lba ) ];
+	offset = VDISK_FILE_OFFSET ( lba );
+	len = ( count * VDISK_SECTOR_SIZE );
+	copy_len = ( ( offset < file->len ) ? ( file->len - offset ) : 0 );
+	if ( copy_len > len )
+		copy_len = len;
+	pad_len = ( len - copy_len );
+	memcpy ( data, ( file->data + offset ), copy_len );
+	memset ( ( data + copy_len ), 0, pad_len );
 }
 
 /** A virtual disk region */
@@ -227,13 +266,13 @@ struct vdisk_region {
 	/** Number of blocks */
 	unsigned int count;
 	/**
-	 * Read data from this region
+	 * Build data from this region
 	 *
 	 * @v start		Starting LBA
 	 * @v count		Number of blocks to read
 	 * @v data		Data buffer
 	 */
-	void ( * read ) ( uint64_t lba, unsigned int count, void *data );
+	void ( * build ) ( uint64_t lba, unsigned int count, void *data );
 };
 
 /** Virtual disk regions */
@@ -242,43 +281,43 @@ static struct vdisk_region vdisk_regions[] = {
 		.name = "MBR",
 		.lba = VDISK_MBR_LBA,
 		.count = VDISK_MBR_COUNT,
-		.read = vdisk_mbr,
+		.build = vdisk_mbr,
 	},
 	{
 		.name = "VBR",
 		.lba = VDISK_VBR_LBA,
 		.count = VDISK_VBR_COUNT,
-		.read = vdisk_vbr,
+		.build = vdisk_vbr,
 	},
 	{
 		.name = "FSInfo",
 		.lba = VDISK_FSINFO_LBA,
 		.count = VDISK_FSINFO_COUNT,
-		.read = vdisk_fsinfo,
+		.build = vdisk_fsinfo,
 	},
 	{
 		.name = "VBR backup",
 		.lba = VDISK_BACKUP_VBR_LBA,
 		.count = VDISK_BACKUP_VBR_COUNT,
-		.read = vdisk_vbr,
+		.build = vdisk_vbr,
 	},
 	{
 		.name = "FAT",
 		.lba = VDISK_FAT_LBA,
 		.count = VDISK_FAT_COUNT,
-		.read = vdisk_fat,
+		.build = vdisk_fat,
 	},
 	{
 		.name = "Root",
 		.lba = VDISK_ROOT_LBA,
 		.count = VDISK_ROOT_COUNT,
-		.read = vdisk_root,
+		.build = vdisk_root,
 	},
 	{
 		.name = "Boot",
 		.lba = VDISK_BOOT_LBA,
 		.count = VDISK_BOOT_COUNT,
-		.read = vdisk_boot,
+		.build = vdisk_boot,
 	},
 };
 
@@ -290,53 +329,81 @@ static struct vdisk_region vdisk_regions[] = {
  * @v data		Data buffer
  */
 void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
-	struct vdisk_region *region = NULL;
+	struct vdisk_region *region;
+	void ( * build ) ( uint64_t lba, unsigned int count, void *data );
+	const char *name;
 	uint64_t start = lba;
 	uint64_t end = ( lba + count );
 	uint64_t frag_start = start;
 	uint64_t frag_end;
+	int file_idx;
+	uint64_t file_end;
 	uint64_t region_start;
 	uint64_t region_end;
 	unsigned int frag_count;
 	unsigned int i;
 
+	printf ( "Read to %p from %#llx+%#x: ", data, lba, count );
+
 	do {
-		/* Truncate fragment to region boundaries */
+		/* Initialise fragment to fill remaining space */
 		frag_end = end;
-		for ( i = 0 ; i < ( sizeof ( vdisk_regions ) /
-				    sizeof ( vdisk_regions[0] ) ) ; i++ ) {
-			region = &vdisk_regions[i];
-			region_start = region->lba;
-			region_end = ( region_start + region->count );
+		name = NULL;
+		build = NULL;
 
-			/* Avoid crossing start of any region */
-			if ( ( frag_start < region_start ) &&
-			     ( frag_end > region_start ) ){
-				frag_end = region_start;
+		/* Truncate fragment and generate data */
+		file_idx = VDISK_FILE_IDX ( frag_start );
+		if ( file_idx >= 0 ) {
+
+			/* Truncate fragment to end of file */
+			file_end = VDISK_FILE_LBA ( file_idx + 1 );
+			if ( frag_end > file_end )
+				frag_end = file_end;
+
+			/* Generate data from file */
+			if ( file_idx < VDISK_MAX_FILES ) {
+				name = vdisk_files[file_idx].name;
+				build = vdisk_file;
 			}
 
-			/* Ignore unless we overlap with this region */
-			if ( ( frag_start >= region_end ) ||
-			     ( frag_end <= region_start ) ) {
-				region = NULL;
-				continue;
+		} else {
+
+			/* Truncate fragment to region boundaries */
+			for ( i = 0 ; i < ( sizeof ( vdisk_regions ) /
+					    sizeof ( vdisk_regions[0] ) ); i++){
+				region = &vdisk_regions[i];
+				region_start = region->lba;
+				region_end = ( region_start + region->count );
+
+				/* Avoid crossing start of any region */
+				if ( ( frag_start < region_start ) &&
+				     ( frag_end > region_start ) ){
+					frag_end = region_start;
+				}
+
+				/* Ignore unless we overlap with this region */
+				if ( ( frag_start >= region_end ) ||
+				     ( frag_end <= region_start ) ) {
+					continue;
+				}
+
+				/* Avoid crossing end of region */
+				if ( frag_end > region_end )
+					frag_end = region_end;
+
+				/* Found a suitable region */
+				name = region->name;
+				build = region->build;
+				break;
 			}
-
-			/* Avoid crossing end of region */
-			if ( frag_end > region_end )
-				frag_end = region_end;
-
-			/* Found a suitable region */
-			break;
 		}
-		frag_count = ( frag_end - frag_start );
-		printf ( "     ...%p from %#llx+%#x (%s)\n",
-			 data, frag_start, frag_count,
-			 ( region ? region->name : "empty" ) );
 
 		/* Generate data from this region */
-		if ( region ) {
-			region->read ( frag_start, frag_count, data );
+		frag_count = ( frag_end - frag_start );
+		printf ( "%s%s (%#lx)", ( ( frag_start == start ) ? "" : ", " ),
+			 ( name ? name : "empty" ), frag_count );
+		if ( build ) {
+			build ( frag_start, frag_count, data );
 		} else {
 			memset ( data, 0, ( frag_count * VDISK_SECTOR_SIZE ) );
 		}
@@ -346,4 +413,6 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 		data += ( frag_count * VDISK_SECTOR_SIZE );
 
 	} while ( frag_start != end );
+
+	printf ( "\n" );
 }

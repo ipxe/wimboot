@@ -161,10 +161,12 @@ int main ( void ) {
 	struct loaded_pe pe;
 
 	/* Construct file list */
-	memcpy ( vdisk_files[0].filename, "BCD     ",
-		 sizeof ( vdisk_files[0].filename ) );
-	memcpy ( vdisk_files[0].extension, "   ",
-		 sizeof ( vdisk_files[0].extension ) );
+	snprintf ( vdisk_files[0].name, sizeof ( vdisk_files[0].name ),
+		   "%s", "BCD" );
+	vdisk_files[0].data = initrd;
+	vdisk_files[0].len = initrd_len;
+	snprintf ( vdisk_files[1].name, sizeof ( vdisk_files[1].name ),
+		   "%s", "bootmgr.exe" );
 	vdisk_files[0].data = initrd;
 	vdisk_files[0].len = initrd_len;
 
