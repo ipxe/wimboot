@@ -42,7 +42,10 @@
 #define PARAM_LEN 0x40
 
 /** Protected-mode bit in CR0 */
-#define CR0_PE 0x01
+#define CR0_PE 0x00000001
+
+/** Paging bit in CR0 */
+#define CR0_PG 0x80000000
 
 	.arch	i386
 
@@ -87,7 +90,8 @@ call_real:
 
 	/* Switch to real mode */
 	movl	%cr0, %eax
-	andb	$~CR0_PE, %al
+	pushl	%eax
+	andl	$~( CR0_PG | CR0_PE ), %eax
 	movl	%eax, %cr0
 	data32 ljmp $BASE_SEG, $( 1f - BASE_ADDRESS )
 1:	movw	$BASE_SEG, %ax
@@ -134,8 +138,7 @@ call_real:
 	/* Switch back to protected mode */
 	addr32 data32 lgdt %cs:( gdt - BASE_ADDRESS )
 	addr32 data32 lidt %cs:( idt - BASE_ADDRESS )
-	movl	%cr0, %eax
-	orb	$CR0_PE, %al
+	popl	%eax
 	movl	%eax, %cr0
 	data32 ljmp $FLAT_CS, $1f
 1:	.code32
