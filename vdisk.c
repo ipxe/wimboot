@@ -159,42 +159,15 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 }
 
 /**
- * Read from virtual root directory
+ * Read from virtual directory
  *
- * @v lba		Starting LBA
- * @v count		Number of blocks to read
+ * @v fixed		Fixed directory entries
+ * @v num_fixed		Number of fixed directory entries
  * @v data		Data buffer
  */
-static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
-			 unsigned int count __attribute__ (( unused )),
-			 void *data ) {
-	struct vdisk_directory *dir = data;
-	static const struct vdisk_directory_entry root[] = {
-		{
-			.filename = "BOOT    ",
-			.extension = "   ",
-			.attr = VDISK_DIRECTORY,
-			.cluster_high = ( VDISK_BOOT_CLUSTER >> 16 ),
-			.cluster_low = ( VDISK_BOOT_CLUSTER & 0xffff ),
-		},
-	};
-
-	/* Construct root directory */
-	memset ( dir, 0, sizeof ( *dir ) );
-	memcpy ( dir, root, sizeof ( root ) );
-}
-
-/**
- * Read from virtual boot directory
- *
- * @v lba		Starting LBA
- * @v count		Number of blocks to read
- * @v data		Data buffer
- */
-static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
-			 unsigned int count __attribute__ (( unused )),
-			 void *data ) {
-	struct vdisk_directory *dir = data;
+static void vdisk_dir ( const struct vdisk_directory_entry *fixed,
+			unsigned int num_fixed,
+			struct vdisk_directory *dir ) {
 	struct vdisk_file *file;
 	struct vdisk_directory_entry *dirent;
 	const char *source;
@@ -204,11 +177,15 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 	uint32_t cluster;
 	unsigned int i;
 
-	/* Construct boot directory */
+	/* Copy fixed entries */
 	memset ( dir, 0, sizeof ( *dir ) );
+	memcpy ( &dir->entry[0], fixed,
+		 ( num_fixed * sizeof ( dir->entry[0] ) ) );
+
+	/* Construct variable entries */
 	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
 		file = &vdisk_files[i];
-		dirent = &dir->entry[i];
+		dirent = &dir->entry[ num_fixed + i ];
 		if ( file->data ) {
 			memset ( dirent->filename, ' ',
 				 sizeof ( dirent->filename ) );
@@ -232,7 +209,68 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 			dirent->cluster_high = ( cluster >> 16 );
 			dirent->cluster_low = ( cluster & 0xffff );
 		}
-	}
+	}	
+}
+
+/**
+ * Read from virtual root directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
+			 unsigned int count __attribute__ (( unused )),
+			 void *data ) {
+	static const struct vdisk_directory_entry root[] = {
+		{
+			.filename = "BOOT    ",
+			.extension = "   ",
+			.attr = VDISK_DIRECTORY,
+			.cluster_high = ( VDISK_BOOT_CLUSTER >> 16 ),
+			.cluster_low = ( VDISK_BOOT_CLUSTER & 0xffff ),
+		},
+		{
+			.filename = "SOURCES ",
+			.extension = "   ",
+			.attr = VDISK_DIRECTORY,
+			.cluster_high = ( VDISK_SOURCES_CLUSTER >> 16 ),
+			.cluster_low = ( VDISK_SOURCES_CLUSTER & 0xffff ),
+		},
+	};
+
+	/* Construct root directory */
+	vdisk_dir ( root, ( sizeof ( root ) / sizeof ( root[0] ) ), data );
+}
+
+/**
+ * Read from virtual boot directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
+			 unsigned int count __attribute__ (( unused )),
+			 void *data ) {
+
+	/* Construct subdirectory */
+	vdisk_dir ( NULL, 0, data );
+}
+
+/**
+ * Read from virtual sources directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
+			    unsigned int count __attribute__ (( unused )),
+			    void *data ) {
+
+	/* Construct subdirectory */
+	vdisk_dir ( NULL, 0, data );
 }
 
 /**
@@ -322,6 +360,12 @@ static struct vdisk_region vdisk_regions[] = {
 		.lba = VDISK_BOOT_LBA,
 		.count = VDISK_BOOT_COUNT,
 		.build = vdisk_boot,
+	},
+	{
+		.name = "Sources",
+		.lba = VDISK_SOURCES_LBA,
+		.count = VDISK_SOURCES_COUNT,
+		.build = vdisk_sources,
 	},
 };
 

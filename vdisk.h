@@ -58,10 +58,11 @@
 
 /** Maximum number of virtual files
  *
- * Must not exceed the number of directory entries within a single
- * sector.
+ * The total number of directory entries (including the two entries
+ * for "Boot" and "Sources") must not exceed the number of directory
+ * entries within a single sector.
  */
-#define VDISK_MAX_FILES ( ( int ) VDISK_DIR_PER_SECTOR )
+#define VDISK_MAX_FILES ( ( int ) VDISK_DIR_PER_SECTOR - 2 )
 
 /** Maximum file size (in sectors) */
 #define VDISK_FILE_COUNT 0x800000UL /* max for 32-bit address space */
@@ -449,6 +450,25 @@ struct vdisk_directory {
 
 /*****************************************************************************
  *
+ * Sources directory
+ *
+ *****************************************************************************
+ */
+
+/** Sources directory cluster */
+#define VDISK_SOURCES_CLUSTER 4
+
+/** Sources directory sector */
+#define VDISK_SOURCES_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_SOURCES_CLUSTER )
+
+/** Sources directory LBA */
+#define VDISK_SOURCES_LBA ( VDISK_VBR_LBA + VDISK_SOURCES_SECTOR )
+
+/** Sources directory sector count */
+#define VDISK_SOURCES_COUNT 1
+
+/*****************************************************************************
+ *
  * Files
  *
  *****************************************************************************
@@ -464,7 +484,7 @@ struct vdisk_file {
 	size_t len;
 };
 
-extern struct vdisk_file vdisk_files[VDISK_DIR_PER_SECTOR];
+extern struct vdisk_file vdisk_files[VDISK_MAX_FILES];
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
 
 #endif /* _VDISK_H */
