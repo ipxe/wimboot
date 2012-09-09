@@ -206,13 +206,13 @@ struct bootapp_memory_region {
 	/** Reserved (for struct list_head?) */
 	uint8_t reserved[8];
 	/** Start page address */
-	uint32_t start_page;
+	uint64_t start_page;
 	/** Reserved */
-	uint8_t reserved_0x0c[12];
+	uint8_t reserved_0x10[8];
 	/** Number of pages */
-	uint32_t num_pages;
+	uint64_t num_pages;
 	/** Reserved */
-	uint8_t reserved_0x1c[8];
+	uint8_t reserved_0x20[4];
 	/** Flags */
 	uint32_t flags;
 } __attribute__ (( packed ));
