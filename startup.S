@@ -77,6 +77,10 @@ reboot:
 gdt:
 	.word	gdt_limit
 	.long	gdt
+	/* 64 bit long mode code segment */
+	.org	( gdt + LM_CS )
+	.word	0, 0
+	.byte	0, 0x9b, 0x20, 0
 	/* 32 bit protected mode flat code segment */
 	.org	( gdt + FLAT_CS )
 	.word	0xffff, 0

@@ -42,17 +42,20 @@
 /** Base linear address */
 #define BASE_ADDRESS ( BASE_SEG << 4 )
 
+/** 64 bit long mode code segment */
+#define LM_CS 0x10
+
 /** 32 bit protected mode flat code segment */
-#define FLAT_CS 0x08
+#define FLAT_CS 0x20
 
 /** 32 bit protected mode flat data segment */
-#define FLAT_DS 0x10
+#define FLAT_DS 0x30
 
 /** 16 bit real mode code segment */
-#define REAL_CS 0x18
+#define REAL_CS 0x50
 
 /** 16 bit real mode data segment */
-#define REAL_DS 0x20
+#define REAL_DS 0x60
 
 #ifndef ASSEMBLY
 
