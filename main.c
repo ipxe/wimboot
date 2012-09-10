@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include "wimboot.h"
 #include "peloader.h"
 #include "int13.h"

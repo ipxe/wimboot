@@ -112,7 +112,7 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 
 	/* Extract entry point */
 	pe->entry = ( pe->base + opthdr->entry );
-	DBG ( "...entry point %#x\n", pe->entry );
+	DBG ( "...entry point %p\n", pe->entry );
 
 	return 0;
 }

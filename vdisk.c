@@ -24,6 +24,7 @@
  *
  */
 
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include "ctype.h"
@@ -448,7 +449,7 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 
 		/* Generate data from this region */
 		frag_count = ( frag_end - frag_start );
-		DBG2 ( "%s%s (%#lx)", ( ( frag_start == start ) ? "" : ", " ),
+		DBG2 ( "%s%s (%#x)", ( ( frag_start == start ) ? "" : ", " ),
 		       ( name ? name : "empty" ), frag_count );
 		if ( build ) {
 			build ( frag_start, frag_count, data );
