@@ -55,22 +55,22 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	void *end;
 	void *raw_base;
 
-	DBG ( "Loading PE executable...\n" );
+	DBG2 ( "Loading PE executable...\n" );
 
 	/* Parse PE header */
 	mzhdr = data;
 	if ( mzhdr->magic != MZ_HEADER_MAGIC ) {
-		DBG ( "...bad MZ magic %04x\n", mzhdr->magic );
+		DBG ( "Bad MZ magic %04x\n", mzhdr->magic );
 		return -1;
 	}
 	pehdr_offset = mzhdr->lfanew;
 	if ( pehdr_offset > len ) {
-		DBG ( "...PE header outside file\n" );
+		DBG ( "PE header outside file\n" );
 		return -1;
 	}
 	pehdr = ( data + pehdr_offset );
 	if ( pehdr->magic != PE_HEADER_MAGIC ) {
-		DBG ( "...bad PE magic %08x\n", pehdr->magic );
+		DBG ( "Bad PE magic %08x\n", pehdr->magic );
 		return -1;
 	}
 	opthdr_offset = ( pehdr_offset + sizeof ( *pehdr ) );
@@ -80,7 +80,7 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	section = ( data + section_offset );
 
 	/* Load header into memory */
-	DBG ( "...headers to %p+%#zx\n", pe->base, opthdr->header_len );
+	DBG2 ( "...headers to %p+%#zx\n", pe->base, opthdr->header_len );
 	memcpy ( pe->base, data, opthdr->header_len );
 	end = ( pe->base + opthdr->header_len );
 
@@ -91,8 +91,8 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 		section_base = ( pe->base + section->virtual );
 		filesz = section->raw_len;
 		memsz = section->misc.virtual_len;
-		DBG ( "...from %#05x to %p+%#zx/%#zx (%s)\n",
-		      section->raw, section_base, filesz, memsz, name );
+		DBG2 ( "...from %#05x to %p+%#zx/%#zx (%s)\n",
+		       section->raw, section_base, filesz, memsz, name );
 		memset ( section_base, 0, memsz );
 		memcpy ( section_base, ( data + section->raw ), filesz );
 		if ( end < ( section_base + memsz ) )
@@ -108,11 +108,11 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	raw_base = ( pe->base + pe->len );
 	memcpy ( raw_base, data, len );
 	pe->len += len;
-	DBG ( "...raw copy to %p+%#zx\n", raw_base, len );
+	DBG2 ( "...raw copy to %p+%#zx\n", raw_base, len );
 
 	/* Extract entry point */
 	pe->entry = ( pe->base + opthdr->entry );
-	DBG ( "...entry point %p\n", pe->entry );
+	DBG2 ( "...entry point %p\n", pe->entry );
 
 	return 0;
 }
