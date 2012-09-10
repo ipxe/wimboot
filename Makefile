@@ -7,6 +7,15 @@ OBJCOPY := objcopy
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I.
 CFLAGS += -m32 -march=i386
 
+# Inhibit -fno-stack-protector
+SP_TEST = $(CC) -fno-stack-protector -x c -c /dev/null \
+                -o /dev/null >/dev/null 2>&1
+SP_FLAGS := $(shell $(SP_TEST) && echo '-fno-stack-protector')
+WORKAROUND_CFLAGS += $(SP_FLAGS)
+
+CFLAGS += $(WORKAROUND_CFLAGS)
+CFLAGS += $(EXTRA_CFLAGS)
+
 ifneq ($(DEBUG),)
 CFLAGS += -DDEBUG=$(DEBUG)
 endif
