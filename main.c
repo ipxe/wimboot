@@ -202,6 +202,10 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 int main ( void ) {
 	struct loaded_pe pe;
 
+	/* Print welcome banner */
+	printf ( "\n\nwimboot -- The Windows Imaging Format bootloader "
+		 "-- http://ipxe.org/wimboot\n\n" );
+
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
 		die ( "FATAL: could not extract initrd files\n" );
