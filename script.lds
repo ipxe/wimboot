@@ -53,4 +53,15 @@ SECTIONS {
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
 
 	_end = .;
+
+	/DISCARD/ : {
+		*(.comment)
+		*(.comment.*)
+		*(.note)
+		*(.note.*)
+		*(.eh_frame)
+		*(.eh_frame.*)
+		*(.rel)
+		*(.rel.*)
+	}
 }
