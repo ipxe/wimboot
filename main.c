@@ -35,6 +35,7 @@
 #include "int13.h"
 #include "vdisk.h"
 #include "cpio.h"
+#include "lznt1.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -46,7 +47,7 @@ extern char _end[];
 const char *cmdline;
 
 /** initrd */
-const void *initrd;
+void *initrd;
 
 /** Length of initrd */
 size_t initrd_len;
@@ -192,6 +193,55 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 		bootmgr_len = len;
 	}
 
+	/* Check for bootmgr */
+	if ( strcasecmp ( name, "bootmgr" ) == 0 ) {
+		const uint8_t *compressed;
+		size_t offset;
+		size_t compressed_len;
+		ssize_t decompressed_len;
+		size_t padded_len;
+
+		/* Look for an embedded compressed bootmgr.exe.  Since
+		 * there is no way for LZNT1 to compress the initial
+		 * "MZ" bytes of bootmgr.exe, we look for this
+		 * signature starting three bytes after a paragraph
+		 * boundary, with a preceding tag byte indicating that
+		 * these two bytes would indeed be uncompressed.
+		 */
+		for ( offset = 0 ; offset < ( len - 5 ) ; offset += 16 ) {
+
+			/* Check signature */
+			compressed = ( data + offset );
+			if ( ( ( compressed[2] & 0x03 ) != 0x00 ) ||
+			     ( compressed[3] != 'M' ) ||
+			     ( compressed[4] != 'Z' ) ) {
+				continue;
+			}
+			compressed_len = ( len - offset );
+
+			/* Find length of decompressed image */
+			decompressed_len = lznt1_decompress ( compressed,
+							      compressed_len,
+							      NULL );
+			if ( decompressed_len < 0 ) {
+				/* May be a false positive signature match */
+				continue;
+			}
+
+			/* Prepend decompressed image to initrd */
+			DBG ( "...extracting embedded bootmgr.exe\n" );
+			padded_len = ( ( decompressed_len + PAGE_SIZE - 1 ) &
+				       ~( PAGE_SIZE - 1 ) );
+			initrd -= padded_len;
+			initrd_len += padded_len;
+			lznt1_decompress ( compressed, compressed_len, initrd );
+
+			/* Add decompressed image */
+			return add_file ( "bootmgr.exe", initrd,
+					  decompressed_len );
+		}
+	}
+
 	return 0;
 }
 
@@ -214,7 +264,7 @@ int main ( void ) {
 	if ( ! bootmgr )
 		die ( "FATAL: no bootmgr.exe\n" );
 	if ( load_pe ( bootmgr, bootmgr_len, &pe ) != 0 )
-		die ( "FATAL: Could not load PE image\n" );
+		die ( "FATAL: Could not load bootmgr.exe\n" );
 
 	/* Complete boot application descriptor set */
 	bootapps.bootapp.pe_base = pe.base;
@@ -229,9 +279,9 @@ int main ( void ) {
 		page_len ( initrd, initrd + initrd_len );
 
 	/* Jump to PE image */
-	DBG ( "Entering PE with parameters at %p\n", &bootapps );
+	DBG ( "Entering bootmgr.exe with parameters at %p\n", &bootapps );
 	pe.entry ( &bootapps.bootapp );
-	die ( "FATAL: PE image returned\n" );
+	die ( "FATAL: bootmgr.exe returned\n" );
 }
 
 /**
