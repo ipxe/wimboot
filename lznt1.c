@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include "wimboot.h"
@@ -34,17 +35,16 @@
  * Decompress LZNT1-compressed data block
  *
  * @v data		Compressed data
- * @v len		Length of compressed data (up to end of block)
+ * @v limit		Length of compressed data up to end of block
  * @v offset		Starting offset within compressed data
- * @v buf		Decompression buffer, or NULL
- * @v out_len		Current output length
- * @ret out_len		Updated output length, or negative error
+ * @v block		Decompression buffer for this block, or NULL
+ * @ret out_len		Length of decompressed block, or negative error
  */
-static ssize_t lznt1_block ( const void *data, size_t len, size_t offset,
-			     void *buf, size_t out_len ) {
+static ssize_t lznt1_block ( const void *data, size_t limit, size_t offset,
+			     void *block ) {
 	const uint16_t *tuple;
 	const uint8_t *copy_src;
-	uint8_t *copy_dest = ( buf + out_len );
+	uint8_t *copy_dest = block;
 	size_t copy_len;
 	size_t block_out_len = 0;
 	unsigned int split = 12;
@@ -52,13 +52,13 @@ static ssize_t lznt1_block ( const void *data, size_t len, size_t offset,
 	unsigned int tag_bit = 0;
 	unsigned int tag = 0;
 
-	while ( offset != len ) {
+	while ( offset != limit ) {
 
 		/* Extract tag */
 		if ( tag_bit == 0 ) {
 			tag = *( ( uint8_t * ) ( data + offset ) );
 			offset++;
-			if ( offset == len )
+			if ( offset == limit )
 				break;
 		}
 
@@ -66,35 +66,37 @@ static ssize_t lznt1_block ( const void *data, size_t len, size_t offset,
 		if ( tag & 1 ) {
 
 			/* Compressed value */
-			if ( offset + sizeof ( *tuple ) > len ) {
+			if ( offset + sizeof ( *tuple ) > limit ) {
 				DBG ( "LZNT1 compressed value overrun at "
 				      "%#zx\n", offset );
 				return -1;
 			}
 			tuple = ( data + offset );
 			offset += sizeof ( *tuple );
-			copy_src = ( copy_dest - LZNT1_VALUE_OFFSET ( *tuple,
-								      split ) );
 			copy_len = LZNT1_VALUE_LEN ( *tuple, split );
+			block_out_len += copy_len;
+			if ( copy_dest ) {
+				copy_src = ( copy_dest -
+					     LZNT1_VALUE_OFFSET ( *tuple,
+								  split ) );
+				while ( copy_len-- )
+					*(copy_dest++) = *(copy_src++);
+			}
 
 		} else {
 
 			/* Uncompressed value */
 			copy_src = ( data + offset );
-			copy_len = 1;
+			if ( copy_dest )
+				*(copy_dest++) = *copy_src;
 			offset++;
+			block_out_len++;
 		}
 
-		/* Copy data */
-		while ( copy_len-- ) {
-			if ( buf ) {
-				*(copy_dest++) = *(copy_src++);
-			}
-			block_out_len++;
-			if ( block_out_len > next_threshold ) {
-				split--;
-				next_threshold <<= 1;
-			}
+		/* Update split, if applicable */
+		while ( block_out_len > next_threshold ) {
+			split--;
+			next_threshold <<= 1;
 		}
 
 		/* Move to next value */
@@ -102,7 +104,7 @@ static ssize_t lznt1_block ( const void *data, size_t len, size_t offset,
 		tag_bit = ( ( tag_bit + 1 ) % 8 );
 	}
 
-	return ( out_len + block_out_len );
+	return block_out_len;
 }
 
 /**
@@ -119,6 +121,9 @@ ssize_t lznt1_decompress ( const void *data, size_t len, void *buf ) {
 	size_t offset = 0;
 	ssize_t out_len = 0;
 	size_t block_len;
+	size_t limit;
+	void *block;
+	ssize_t block_out_len;
 
 	while ( offset != len ) {
 
@@ -144,11 +149,14 @@ ssize_t lznt1_decompress ( const void *data, size_t len, void *buf ) {
 			/* Compressed block */
 			DBG2 ( "LZNT1 compressed block %#zx+%#zx\n",
 			       offset, block_len );
-			out_len = lznt1_block ( data, ( offset + block_len ),
-						offset, buf, out_len );
-			if ( out_len < 0 )
-				return out_len;
+			limit = ( offset + block_len );
+			block = ( buf ? ( buf + out_len ) : NULL );
+			block_out_len = lznt1_block ( data, limit, offset,
+						      block );
+			if ( block_out_len < 0 )
+				return block_out_len;
 			offset += block_len;
+			out_len += block_out_len;
 
 		} else {
 
