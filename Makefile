@@ -8,7 +8,7 @@ CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I.
 CFLAGS += -m32 -march=i386
 
 ifneq ($(DEBUG),)
-CFLAGS += -DDEBUG
+CFLAGS += -DDEBUG=$(DEBUG)
 endif
 
 all : wimboot
