@@ -11,6 +11,4 @@
 
 #define __unused __attribute__ (( unused ))
 
-typedef signed long ssize_t;
-
 #include "ipxe/vsprintf.c"

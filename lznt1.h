@@ -1,5 +1,5 @@
-#ifndef _STDINT_H
-#define _STDINT_H
+#ifndef _LZNT1_H
+#define _LZNT1_H
 
 /*
  * Copyright (C) 2012 Michael Brown <mbrown@fensystems.co.uk>.
@@ -23,26 +23,25 @@
 /**
  * @file
  *
- * Standard integer types
+ * LZNT1 decompression
  *
  */
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
+#include <stdint.h>
 
-typedef signed char int8_t;
-typedef signed short int16_t;
-typedef signed int int32_t;
-typedef signed long long int64_t;
+/** Extract LZNT1 block length */
+#define LZNT1_BLOCK_LEN( header ) ( ( (header) & 0x0fff ) + 1 )
 
-typedef unsigned long intptr_t;
+/** Determine if LZNT1 block is compressed */
+#define LZNT1_BLOCK_COMPRESSED( header ) ( (header) & 0x8000 )
 
-typedef __SIZE_TYPE__ size_t;
-typedef signed long ssize_t;
+/** Extract LZNT1 compressed value length */
+#define LZNT1_VALUE_LEN( tuple, split ) \
+	( ( (tuple) & ( ( 1 << (split) ) - 1 ) ) + 3 )
 
-typedef __WCHAR_TYPE__ wchar_t;
-typedef __WINT_TYPE__ wint_t;
+/** Extract LZNT1 compressed value offset */
+#define LZNT1_VALUE_OFFSET( tuple, split ) ( ( (tuple) >> split ) + 1 )
 
-#endif /* _STDINT_H */
+extern ssize_t lznt1_decompress ( const void *data, size_t len, void *buf );
+
+#endif /* _LZNT1_H */
