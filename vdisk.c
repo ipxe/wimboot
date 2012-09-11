@@ -166,7 +166,7 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
  *
  * @v dir		Virtual directory
  */
-static void vdisk_empty_dir ( struct vdisk_directory *dir ) {
+static void vdisk_empty_dir ( union vdisk_directory *dir ) {
 	unsigned int i;
 
 	/* Mark all entries as present and deleted */
@@ -186,7 +186,7 @@ static void vdisk_empty_dir ( struct vdisk_directory *dir ) {
 static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
 			 unsigned int count __attribute__ (( unused )),
 			 void *data ) {
-	struct vdisk_directory *dir = data;
+	union vdisk_directory *dir = data;
 	static const struct vdisk_directory_entry root[] = {
 		{
 			.filename = "BOOT    ",
@@ -219,7 +219,7 @@ static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
 static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 			 unsigned int count __attribute__ (( unused )),
 			 void *data ) {
-	struct vdisk_directory *dir = data;
+	union vdisk_directory *dir = data;
 	static const struct vdisk_directory_entry boot[] = {
 		{
 			.filename = "FONTS   ",
@@ -245,7 +245,7 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
 			    unsigned int count __attribute__ (( unused )),
 			    void *data ) {
-	struct vdisk_directory *dir = data;
+	union vdisk_directory *dir = data;
 
 	/* Construct sources subdirectories */
 	vdisk_empty_dir ( dir );
@@ -261,7 +261,7 @@ static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
 static void vdisk_fonts ( uint64_t lba __attribute__ (( unused )),
 			  unsigned int count __attribute__ (( unused )),
 			  void *data ) {
-	struct vdisk_directory *dir = data;
+	union vdisk_directory *dir = data;
 
 	/* Construct fonts subdirectories */
 	vdisk_empty_dir ( dir );
@@ -275,15 +275,19 @@ static void vdisk_fonts ( uint64_t lba __attribute__ (( unused )),
  * @v data		Data buffer
  */
 static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
-	struct vdisk_directory *dir;
+	union vdisk_directory *dir;
 	struct vdisk_directory_entry *dirent;
+	struct vdisk_long_filename *lfn;
 	struct vdisk_file *file;
 	unsigned int idx;
-	const char *source;
-	char *dest;
-	size_t remaining;
-	char c;
 	uint32_t cluster;
+	const char *name;
+	uint8_t *checksum_data;
+	uint8_t checksum;
+	unsigned int sequence;
+	uint16_t *lfn_char;
+	char c;
+	unsigned int i;
 
 	for ( ; count ; lba++, count--, data += VDISK_SECTOR_SIZE ) {
 
@@ -298,26 +302,61 @@ static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
 		if ( ! file->data )
 			continue;
 
-		/* Populate directory entry */
+		/* Populate directory entry (with invalid 8.3 filename) */
 		memset ( dirent->filename, ' ', sizeof ( dirent->filename ) );
 		memset ( dirent->extension, ' ', sizeof ( dirent->extension ) );
-		source = file->name;
-		dest = dirent->filename;
-		remaining = sizeof ( dirent->filename );
-		while ( ( c = *(source++) ) ) {
-			if ( c == '.' ) {
-				dest = dirent->extension;
-				remaining = sizeof ( dirent->extension);
-			} else if ( remaining ) {
-				*(dest++) = toupper ( c );
-				remaining--;
-			}
-		}
 		dirent->attr = VDISK_READ_ONLY;
 		dirent->size = file->len;
 		cluster = VDISK_FILE_CLUSTER ( idx );
 		dirent->cluster_high = ( cluster >> 16 );
 		dirent->cluster_low = ( cluster & 0xffff );
+
+		/* Calculate checksum of 8.3 filename */
+		checksum = 0;
+		checksum_data = ( ( uint8_t * ) dirent->filename );
+		for ( i = 0 ; i < ( sizeof ( dirent->filename ) +
+				    sizeof ( dirent->extension ) ) ; i++ ) {
+			checksum = ( ( ( ( checksum & 1 ) << 7 ) |
+				       ( checksum >> 1 ) ) +
+				     *(checksum_data++) );
+		}
+
+		/* Construct long filename record */
+		lfn = &dir->lfn[ VDISK_DIRENT_PER_SECTOR - 2 ];
+		lfn_char = &lfn->name_1[0];
+		name = file->name;
+		sequence = 1;
+		do {
+
+			/* Initialise long filename, if necessary */
+			if ( lfn->attr != VDISK_LFN_ATTR ) {
+				lfn->sequence = sequence++;
+				memset ( lfn->name_1, 0xff,
+					 sizeof ( lfn->name_1 ) );
+				lfn->attr = VDISK_LFN_ATTR;
+				lfn->checksum = checksum;
+				memset ( lfn->name_2, 0xff,
+					 sizeof ( lfn->name_2 ) );
+				memset ( lfn->name_3, 0xff,
+					 sizeof ( lfn->name_3 ) );
+			}
+
+			/* Add character to long filename */
+			c = *(name++);
+			*lfn_char = c;
+			if ( lfn_char == &lfn->name_1[4] ) {
+				lfn_char = &lfn->name_2[0];
+			} else if ( lfn_char == &lfn->name_2[5] ) {
+				lfn_char = &lfn->name_3[0];
+			} else if ( lfn_char == &lfn->name_3[1] ) {
+				lfn--;
+				lfn_char = &lfn->name_1[0];
+			} else {
+				lfn_char++;
+			}
+
+		} while ( c != 0 );
+		lfn->sequence |= VDISK_LFN_END;
 	}
 }
 

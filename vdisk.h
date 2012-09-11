@@ -397,9 +397,38 @@ struct vdisk_directory_entry {
 /** Directory entry attributes */
 enum vdisk_directory_entry_attributes {
 	VDISK_READ_ONLY = 0x01,
+	VDISK_HIDDEN = 0x02,
+	VDISK_SYSTEM = 0x04,
 	VDISK_VOLUME_LABEL = 0x08,
 	VDISK_DIRECTORY = 0x10,
 };
+
+/** A long filename record */
+struct vdisk_long_filename {
+	/** Sequence number */
+	uint8_t sequence;
+	/** Name characters */
+	uint16_t name_1[5];
+	/** Attributes */
+	uint8_t attr;
+	/** Type */
+	uint8_t type;
+	/** Checksum of 8.3 name */
+	uint8_t checksum;
+	/** Name characters */
+	uint16_t name_2[6];
+	/** Reserved */
+	uint16_t reserved;
+	/** Name characters */
+	uint16_t name_3[2];
+} __attribute__ (( packed ));
+
+/** Long filename end-of-sequence marker */
+#define VDISK_LFN_END 0x40
+
+/** Long filename attributes */
+#define VDISK_LFN_ATTR \
+	( VDISK_READ_ONLY | VDISK_HIDDEN | VDISK_SYSTEM | VDISK_VOLUME_LABEL )
 
 /** Number of directory entries per sector */
 #define VDISK_DIRENT_PER_SECTOR					\
@@ -407,9 +436,11 @@ enum vdisk_directory_entry_attributes {
 	  sizeof ( struct vdisk_directory_entry ) )
 
 /** A directory sector */
-struct vdisk_directory {
+union vdisk_directory {
 	/** Entries */
 	struct vdisk_directory_entry entry[VDISK_DIRENT_PER_SECTOR];
+	/** Long filename records */
+	struct vdisk_long_filename lfn[VDISK_DIRENT_PER_SECTOR];
 } __attribute__ (( packed ));
 
 /*****************************************************************************
