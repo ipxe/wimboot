@@ -109,7 +109,7 @@ idt:
 	.size	idt, . - idt
 
 	/* Stack */
-	.section ".bss", "aw", @nobits
+	.section ".stack", "aw", @nobits
 	.align	8
 _stack:
 	.space	( 256 * 1024 )

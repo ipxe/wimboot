@@ -16,6 +16,8 @@ SECTIONS {
 	/* Real-mode uninitialised data section */
 	.bss16 ( NOLOAD ) : {
 		_bss16 = .;
+		*(.stack16)
+		*(.stack16.*)
 		*(.bss16)
 		*(.bss16.*)
 		_ebss16 = .;
@@ -48,6 +50,9 @@ SECTIONS {
 		_bss = .;
 		*(.bss)
 		*(.bss.*)
+		*(COMMON)
+		*(.stack)
+		*(.stack.*)
 		_ebss = .;
 	}
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
