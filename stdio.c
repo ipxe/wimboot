@@ -54,3 +54,19 @@ int putchar ( int character ) {
 
 	return 0;
 }
+
+/**
+ * Get character from console
+ *
+ * @ret character	Character
+ */
+int getchar ( void ) {
+	struct bootapp_callback_params params;
+
+	/* Get character */
+	memset ( &params, 0, sizeof ( params ) );
+	params.vector.interrupt = 0x16;
+	call_interrupt ( &params );
+
+	return params.al;
+}
