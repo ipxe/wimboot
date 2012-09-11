@@ -58,11 +58,10 @@
 
 /** Maximum number of virtual files
  *
- * The total number of directory entries (including the two entries
- * for "Boot" and "Sources") must not exceed the number of directory
- * entries within a single sector.
+ * The total number of files must be strictly less than the number of
+ * sectors per cluster.
  */
-#define VDISK_MAX_FILES ( ( int ) VDISK_DIR_PER_SECTOR - 2 )
+#define VDISK_MAX_FILES ( VDISK_CLUSTER_COUNT - 1 )
 
 /** Maximum file size (in sectors) */
 #define VDISK_FILE_COUNT 0x800000UL /* max for 32-bit address space */
@@ -79,6 +78,9 @@
 /** File offset (in bytes) from LBA */
 #define VDISK_FILE_OFFSET( lba )					\
 	( ( (lba) % VDISK_FILE_COUNT ) * VDISK_SECTOR_SIZE )
+
+/** File index from directory entry LBA */
+#define VDISK_FILE_DIRENT_IDX( lba ) ( ( (lba) - 1 ) % VDISK_CLUSTER_COUNT )
 
 /** Number of sectors allocated for FAT */
 #define VDISK_SECTORS_PER_FAT						\
@@ -389,6 +391,9 @@ struct vdisk_directory_entry {
 	uint32_t size;
 } __attribute__ (( packed ));
 
+/** Magic marker for deleted files */
+#define VDISK_DIRENT_FILENAME0_DELETED 0xe5
+
 /** Directory entry attributes */
 enum vdisk_directory_entry_attributes {
 	VDISK_READ_ONLY = 0x01,
@@ -397,17 +402,14 @@ enum vdisk_directory_entry_attributes {
 };
 
 /** Number of directory entries per sector */
-#define VDISK_DIR_PER_SECTOR					\
+#define VDISK_DIRENT_PER_SECTOR					\
 	( VDISK_SECTOR_SIZE /					\
 	  sizeof ( struct vdisk_directory_entry ) )
 
-/** A directory
- *
- * We limit ourselves to 32 entries per directory (i.e. a single sector).
- */
+/** A directory sector */
 struct vdisk_directory {
 	/** Entries */
-	struct vdisk_directory_entry entry[VDISK_DIR_PER_SECTOR];
+	struct vdisk_directory_entry entry[VDISK_DIRENT_PER_SECTOR];
 } __attribute__ (( packed ));
 
 /*****************************************************************************
@@ -426,9 +428,6 @@ struct vdisk_directory {
 /** Root directory LBA */
 #define VDISK_ROOT_LBA ( VDISK_VBR_LBA + VDISK_ROOT_SECTOR )
 
-/** Root directory sector count */
-#define VDISK_ROOT_COUNT 1
-
 /*****************************************************************************
  *
  * Boot directory
@@ -444,9 +443,6 @@ struct vdisk_directory {
 
 /** Boot directory LBA */
 #define VDISK_BOOT_LBA ( VDISK_VBR_LBA + VDISK_BOOT_SECTOR )
-
-/** Boot directory sector count */
-#define VDISK_BOOT_COUNT 1
 
 /*****************************************************************************
  *
@@ -464,8 +460,21 @@ struct vdisk_directory {
 /** Sources directory LBA */
 #define VDISK_SOURCES_LBA ( VDISK_VBR_LBA + VDISK_SOURCES_SECTOR )
 
-/** Sources directory sector count */
-#define VDISK_SOURCES_COUNT 1
+/*****************************************************************************
+ *
+ * Fonts directory
+ *
+ *****************************************************************************
+ */
+
+/** Fonts directory cluster */
+#define VDISK_FONTS_CLUSTER 5
+
+/** Fonts directory sector */
+#define VDISK_FONTS_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_FONTS_CLUSTER )
+
+/** Fonts directory LBA */
+#define VDISK_FONTS_LBA ( VDISK_VBR_LBA + VDISK_FONTS_SECTOR )
 
 /*****************************************************************************
  *

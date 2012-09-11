@@ -143,6 +143,8 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 		next[1] = VDISK_FAT_END_MARKER;
 		next[VDISK_ROOT_CLUSTER] = VDISK_FAT_END_MARKER;
 		next[VDISK_BOOT_CLUSTER] = VDISK_FAT_END_MARKER;
+		next[VDISK_SOURCES_CLUSTER] = VDISK_FAT_END_MARKER;
+		next[VDISK_FONTS_CLUSTER] = VDISK_FAT_END_MARKER;
 	}
 
 	/* Add end-of-file markers, if applicable */
@@ -160,61 +162,22 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 }
 
 /**
- * Read from virtual directory
+ * Initialise empty directory
  *
- * @v fixed		Fixed directory entries
- * @v num_fixed		Number of fixed directory entries
- * @v data		Data buffer
+ * @v dir		Virtual directory
  */
-static void vdisk_dir ( const struct vdisk_directory_entry *fixed,
-			unsigned int num_fixed,
-			struct vdisk_directory *dir ) {
-	struct vdisk_file *file;
-	struct vdisk_directory_entry *dirent;
-	const char *source;
-	char *dest;
-	size_t remaining;
-	char c;
-	uint32_t cluster;
+static void vdisk_empty_dir ( struct vdisk_directory *dir ) {
 	unsigned int i;
 
-	/* Copy fixed entries */
+	/* Mark all entries as present and deleted */
 	memset ( dir, 0, sizeof ( *dir ) );
-	memcpy ( &dir->entry[0], fixed,
-		 ( num_fixed * sizeof ( dir->entry[0] ) ) );
-
-	/* Construct variable entries */
-	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
-		file = &vdisk_files[i];
-		dirent = &dir->entry[ num_fixed + i ];
-		if ( file->data ) {
-			memset ( dirent->filename, ' ',
-				 sizeof ( dirent->filename ) );
-			memset ( dirent->extension, ' ',
-				 sizeof ( dirent->extension ) );
-			source = file->name;
-			dest = dirent->filename;
-			remaining = sizeof ( dirent->filename );
-			while ( ( c = *(source++) ) ) {
-				if ( c == '.' ) {
-					dest = dirent->extension;
-					remaining = sizeof ( dirent->extension);
-				} else if ( remaining ) {
-					*(dest++) = toupper ( c );
-					remaining--;
-				}
-			}
-			dirent->attr = VDISK_READ_ONLY;
-			dirent->size = file->len;
-			cluster = VDISK_FILE_CLUSTER ( i );
-			dirent->cluster_high = ( cluster >> 16 );
-			dirent->cluster_low = ( cluster & 0xffff );
-		}
-	}	
+	for ( i = 0 ; i < VDISK_DIRENT_PER_SECTOR ; i++ ) {
+		dir->entry[i].filename[0] = VDISK_DIRENT_FILENAME0_DELETED;
+	}
 }
 
 /**
- * Read from virtual root directory
+ * Read subdirectories from virtual root directory
  *
  * @v lba		Starting LBA
  * @v count		Number of blocks to read
@@ -223,6 +186,7 @@ static void vdisk_dir ( const struct vdisk_directory_entry *fixed,
 static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
 			 unsigned int count __attribute__ (( unused )),
 			 void *data ) {
+	struct vdisk_directory *dir = data;
 	static const struct vdisk_directory_entry root[] = {
 		{
 			.filename = "BOOT    ",
@@ -240,12 +204,13 @@ static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
 		},
 	};
 
-	/* Construct root directory */
-	vdisk_dir ( root, ( sizeof ( root ) / sizeof ( root[0] ) ), data );
+	/* Construct root subdirectories */
+	vdisk_empty_dir ( dir );
+	memcpy ( &dir->entry[0], root, sizeof ( root ) );
 }
 
 /**
- * Read from virtual boot directory
+ * Read subdirectories from virtual boot directory
  *
  * @v lba		Starting LBA
  * @v count		Number of blocks to read
@@ -254,13 +219,24 @@ static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
 static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 			 unsigned int count __attribute__ (( unused )),
 			 void *data ) {
+	struct vdisk_directory *dir = data;
+	static const struct vdisk_directory_entry boot[] = {
+		{
+			.filename = "FONTS   ",
+			.extension = "   ",
+			.attr = VDISK_DIRECTORY,
+			.cluster_high = ( VDISK_FONTS_CLUSTER >> 16 ),
+			.cluster_low = ( VDISK_FONTS_CLUSTER & 0xffff ),
+		},
+	};
 
-	/* Construct subdirectory */
-	vdisk_dir ( NULL, 0, data );
+	/* Construct boot subdirectories */
+	vdisk_empty_dir ( dir );
+	memcpy ( &dir->entry[0], boot, sizeof ( boot ) );
 }
 
 /**
- * Read from virtual sources directory
+ * Read subdirectories from virtual sources directory
  *
  * @v lba		Starting LBA
  * @v count		Number of blocks to read
@@ -269,9 +245,80 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
 static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
 			    unsigned int count __attribute__ (( unused )),
 			    void *data ) {
+	struct vdisk_directory *dir = data;
 
-	/* Construct subdirectory */
-	vdisk_dir ( NULL, 0, data );
+	/* Construct sources subdirectories */
+	vdisk_empty_dir ( dir );
+}
+
+/**
+ * Read subdirectories from virtual fonts directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_fonts ( uint64_t lba __attribute__ (( unused )),
+			  unsigned int count __attribute__ (( unused )),
+			  void *data ) {
+	struct vdisk_directory *dir = data;
+
+	/* Construct fonts subdirectories */
+	vdisk_empty_dir ( dir );
+}
+
+/**
+ * Read files from virtual directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
+	struct vdisk_directory *dir;
+	struct vdisk_directory_entry *dirent;
+	struct vdisk_file *file;
+	unsigned int idx;
+	const char *source;
+	char *dest;
+	size_t remaining;
+	char c;
+	uint32_t cluster;
+
+	for ( ; count ; lba++, count--, data += VDISK_SECTOR_SIZE ) {
+
+		/* Initialise directory */
+		dir = data;
+		vdisk_empty_dir ( dir );
+		dirent = &dir->entry[ VDISK_DIRENT_PER_SECTOR - 1 ];
+
+		/* Identify file */
+		idx = VDISK_FILE_DIRENT_IDX ( lba );
+		file = &vdisk_files[idx];
+		if ( ! file->data )
+			continue;
+
+		/* Populate directory entry */
+		memset ( dirent->filename, ' ', sizeof ( dirent->filename ) );
+		memset ( dirent->extension, ' ', sizeof ( dirent->extension ) );
+		source = file->name;
+		dest = dirent->filename;
+		remaining = sizeof ( dirent->filename );
+		while ( ( c = *(source++) ) ) {
+			if ( c == '.' ) {
+				dest = dirent->extension;
+				remaining = sizeof ( dirent->extension);
+			} else if ( remaining ) {
+				*(dest++) = toupper ( c );
+				remaining--;
+			}
+		}
+		dirent->attr = VDISK_READ_ONLY;
+		dirent->size = file->len;
+		cluster = VDISK_FILE_CLUSTER ( idx );
+		dirent->cluster_high = ( cluster >> 16 );
+		dirent->cluster_low = ( cluster & 0xffff );
+	}
 }
 
 /**
@@ -318,56 +365,43 @@ struct vdisk_region {
 	void ( * build ) ( uint64_t lba, unsigned int count, void *data );
 };
 
+/** Define a virtual disk region */
+#define VDISK_REGION( _name, _build, _lba, _count ) {		\
+		.name = _name,					\
+		.lba = _lba,					\
+		.count = _count,				\
+		.build = _build,				\
+	}
+
+/** Define a virtual disk directory region */
+#define VDISK_DIRECTORY_REGION( _name, _build_subdirs, _lba ) {	\
+		.name = _name " subdirs",			\
+		.lba = _lba,					\
+		.count = 1,					\
+		.build = _build_subdirs,			\
+	}, {							\
+		.name = _name " files",				\
+		.lba = ( _lba + 1 ),				\
+		.count = ( VDISK_CLUSTER_COUNT - 1 ),		\
+		.build = vdisk_dir_files,			\
+	}
+
 /** Virtual disk regions */
 static struct vdisk_region vdisk_regions[] = {
-	{
-		.name = "MBR",
-		.lba = VDISK_MBR_LBA,
-		.count = VDISK_MBR_COUNT,
-		.build = vdisk_mbr,
-	},
-	{
-		.name = "VBR",
-		.lba = VDISK_VBR_LBA,
-		.count = VDISK_VBR_COUNT,
-		.build = vdisk_vbr,
-	},
-	{
-		.name = "FSInfo",
-		.lba = VDISK_FSINFO_LBA,
-		.count = VDISK_FSINFO_COUNT,
-		.build = vdisk_fsinfo,
-	},
-	{
-		.name = "VBR backup",
-		.lba = VDISK_BACKUP_VBR_LBA,
-		.count = VDISK_BACKUP_VBR_COUNT,
-		.build = vdisk_vbr,
-	},
-	{
-		.name = "FAT",
-		.lba = VDISK_FAT_LBA,
-		.count = VDISK_FAT_COUNT,
-		.build = vdisk_fat,
-	},
-	{
-		.name = "Root",
-		.lba = VDISK_ROOT_LBA,
-		.count = VDISK_ROOT_COUNT,
-		.build = vdisk_root,
-	},
-	{
-		.name = "Boot",
-		.lba = VDISK_BOOT_LBA,
-		.count = VDISK_BOOT_COUNT,
-		.build = vdisk_boot,
-	},
-	{
-		.name = "Sources",
-		.lba = VDISK_SOURCES_LBA,
-		.count = VDISK_SOURCES_COUNT,
-		.build = vdisk_sources,
-	},
+	VDISK_REGION ( "MBR", vdisk_mbr,
+		       VDISK_MBR_LBA, VDISK_MBR_COUNT ),
+	VDISK_REGION ( "VBR", vdisk_vbr,
+		       VDISK_VBR_LBA, VDISK_VBR_COUNT ),
+	VDISK_REGION ( "FSInfo", vdisk_fsinfo,
+		       VDISK_FSINFO_LBA, VDISK_FSINFO_COUNT ),
+	VDISK_REGION ( "VBR Backup", vdisk_vbr,
+		       VDISK_BACKUP_VBR_LBA, VDISK_BACKUP_VBR_COUNT ),
+	VDISK_REGION ( "FAT", vdisk_fat,
+		       VDISK_FAT_LBA, VDISK_FAT_COUNT ),
+	VDISK_DIRECTORY_REGION ( "Root", vdisk_root, VDISK_ROOT_LBA ),
+	VDISK_DIRECTORY_REGION ( "Boot", vdisk_boot, VDISK_BOOT_LBA ),
+	VDISK_DIRECTORY_REGION ( "Sources", vdisk_sources, VDISK_SOURCES_LBA ),
+	VDISK_DIRECTORY_REGION ( "Fonts", vdisk_fonts, VDISK_FONTS_LBA ),
 };
 
 /**
