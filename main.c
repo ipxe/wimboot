@@ -181,7 +181,7 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 	}
 
 	/* Store file */
-	DBG ( "Loading %s\n", name );
+	DBG ( "Loading %s at %p+%#zx\n", name, data, len );
 	vdisk_files[idx].name = name;
 	vdisk_files[idx].data = data;
 	vdisk_files[idx].len = len;
