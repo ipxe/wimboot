@@ -253,8 +253,8 @@ int main ( void ) {
 	struct loaded_pe pe;
 
 	/* Print welcome banner */
-	printf ( "\n\nwimboot -- The Windows Imaging Format bootloader "
-		 "-- http://ipxe.org/wimboot\n\n" );
+	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
+		 "bootloader -- http://ipxe.org/wimboot\n\n" );
 
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )

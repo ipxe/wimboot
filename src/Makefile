@@ -1,3 +1,5 @@
+VERSION := v0.9.1
+
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o
 HEADERS := $(wildcard *.h)
@@ -6,6 +8,7 @@ OBJCOPY := objcopy
 
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I.
 CFLAGS += -m32 -march=i386
+CFLAGS += -DVERSION="\"$(VERSION)\""
 
 # Inhibit -fno-stack-protector
 SP_TEST = $(CC) -fno-stack-protector -x c -c /dev/null \
