@@ -27,6 +27,7 @@ all : wimboot
 
 wimboot : wimboot.elf
 	$(OBJCOPY) -Obinary $< $@
+	cp $@ ../$@
 
 wimboot.elf : $(OBJECTS) script.lds
 	$(LD) -m elf_i386 -T script.lds -o $@ $(OBJECTS)
@@ -38,4 +39,4 @@ wimboot.elf : $(OBJECTS) script.lds
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean :
-	rm -f *.o *.elf wimboot
+	rm -f *.o *.elf wimboot ../wimboot
