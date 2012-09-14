@@ -30,6 +30,23 @@
 #include "int13.h"
 #include "vdisk.h"
 
+/** Emulated drive number */
+static int vdisk_drive;
+
+/**
+ * Initialise emulation
+ *
+ * @ret drive		Emulated drive number
+ */
+int initialise_int13 ( void ) {
+
+	/* Determine drive number */
+	vdisk_drive = ( 0x80 | INT13_DRIVE_COUNT++ );
+	DBG ( "Emulating drive %#02x\n", vdisk_drive );
+
+	return vdisk_drive;
+}
+
 /**
  * INT 13, 08 - Get drive parameters
  *
@@ -49,7 +66,7 @@ static void int13_get_parameters ( struct bootapp_callback_params *params ) {
 
 	/* Calculate number of drives to report */
 	num_drives = INT13_DRIVE_COUNT;
-	min_num_drives = ( ( VDISK_DRIVE & 0x7f ) + 1 );
+	min_num_drives = ( ( vdisk_drive & 0x7f ) + 1 );
 	if ( num_drives < min_num_drives )
 		num_drives = min_num_drives;
 
@@ -156,33 +173,52 @@ static void int13_extended_read ( struct bootapp_callback_params *params ) {
  */
 void emulate_int13 ( struct bootapp_callback_params *params ) {
 	int command = params->ah;
+	int drive = params->dl;
+	int min_num_drives;
 
-	/* Populate eflags with a sensible starting value */
-	__asm__ ( "pushfl\n\t"
-		  "popl %0\n\t"
-		  : "=r" ( params->eflags ) );
-	params->eflags &= ~CF;
+	if ( drive == vdisk_drive ) {
 
-	/* Handle command */
-	switch ( command ) {
-	case INT13_GET_PARAMETERS:
-		int13_get_parameters ( params );
-		break;
-	case INT13_GET_DISK_TYPE:
-		int13_get_disk_type ( params );
-		break;
-	case INT13_EXTENSION_CHECK:
-		int13_extension_check ( params );
-		break;
-	case INT13_GET_EXTENDED_PARAMETERS:
-		int13_get_extended_parameters ( params );
-		break;
-	case INT13_EXTENDED_READ:
-		int13_extended_read ( params );
-		break;
-	default:
-		DBG ( "Unrecognised INT 13,%02x\n", command );
-		params->eflags |= CF;
-		break;
+		/* Emulated drive - handle internally */
+
+		/* Populate eflags with a sensible starting value */
+		__asm__ ( "pushfl\n\t"
+			  "popl %0\n\t"
+			  : "=r" ( params->eflags ) );
+		params->eflags &= ~CF;
+
+		/* Handle command */
+		switch ( command ) {
+		case INT13_GET_PARAMETERS:
+			int13_get_parameters ( params );
+			break;
+		case INT13_GET_DISK_TYPE:
+			int13_get_disk_type ( params );
+			break;
+		case INT13_EXTENSION_CHECK:
+			int13_extension_check ( params );
+			break;
+		case INT13_GET_EXTENDED_PARAMETERS:
+			int13_get_extended_parameters ( params );
+			break;
+		case INT13_EXTENDED_READ:
+			int13_extended_read ( params );
+			break;
+		default:
+			DBG ( "Unrecognised INT 13,%02x\n", command );
+			params->eflags |= CF;
+			break;
+		}
+
+	} else {
+
+		/* Pass through command to underlying INT 13 */
+		call_interrupt ( params );
+
+		/* Modify drive count, if applicable */
+		if ( command == INT13_GET_PARAMETERS ) {
+			min_num_drives = ( ( vdisk_drive & 0x7f ) + 1 );
+			if ( params->dl < min_num_drives )
+				params->dl = min_num_drives;
+		}
 	}
 }

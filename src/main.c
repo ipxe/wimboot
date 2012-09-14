@@ -74,8 +74,7 @@ enum {
 static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
 
 	/* Intercept INT 13 calls for the emulated drive */
-	if ( ( params->vector.interrupt == 0x13 ) &&
-	     ( params->dl == VDISK_DRIVE ) ) {
+	if ( params->vector.interrupt == 0x13 ) {
 		emulate_int13 ( params );
 	} else {
 		call_interrupt ( params );
@@ -91,7 +90,6 @@ static struct bootapp_callback_functions callback_fns = {
 /** Real-mode callbacks */
 static struct bootapp_callback callback = {
 	.fns = &callback_fns,
-	.drive = VDISK_DRIVE,
 };
 
 /** Boot application descriptor set */
@@ -259,6 +257,9 @@ int main ( void ) {
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
 		die ( "FATAL: could not extract initrd files\n" );
+
+	/* Add INT 13 drive */
+	callback.drive = initialise_int13();
 
 	/* Load bootmgr.exe to memory */
 	if ( ! bootmgr )

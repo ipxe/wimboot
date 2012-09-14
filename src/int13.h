@@ -72,7 +72,7 @@
 #define INT13_FL_DMA_TRANSPARENT 	0x01
 
 /** BIOS drive counter */
-#define INT13_DRIVE_COUNT ( *( ( uint8_t * ) REAL_PTR ( 0x40, 0x75 ) ) )
+#define INT13_DRIVE_COUNT ( *( ( ( uint8_t * ) REAL_PTR ( 0x40, 0x75 ) ) ) )
 
 /** An INT 13 disk address packet */
 struct int13_disk_address {
@@ -114,6 +114,7 @@ struct int13_disk_parameters {
 	uint16_t sector_size;
 } __attribute__ (( packed ));
 
+extern int initialise_int13 ( void );
 extern void emulate_int13 ( struct bootapp_callback_params *params );
 
 #endif /* _INT13_H */

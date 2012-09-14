@@ -29,9 +29,6 @@
 
 #include <stdint.h>
 
-/** Drive number */
-#define VDISK_DRIVE 0x80
-
 /** Number of cylinders */
 #define VDISK_CYLINDERS 1024 /* Maximum possible */
 
