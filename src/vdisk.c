@@ -140,11 +140,8 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 	if ( start == 0 ) {
 		next[0] = ( ( VDISK_FAT_END_MARKER & ~0xff ) |
 			    VDISK_VBR_MEDIA );
-		next[1] = VDISK_FAT_END_MARKER;
-		next[VDISK_ROOT_CLUSTER] = VDISK_FAT_END_MARKER;
-		next[VDISK_BOOT_CLUSTER] = VDISK_FAT_END_MARKER;
-		next[VDISK_SOURCES_CLUSTER] = VDISK_FAT_END_MARKER;
-		next[VDISK_FONTS_CLUSTER] = VDISK_FAT_END_MARKER;
+		for ( i = 1; i < ( VDISK_SECTOR_SIZE / sizeof ( *next ) ); i++ )
+			next[i] = VDISK_FAT_END_MARKER;
 	}
 
 	/* Add end-of-file markers, if applicable */
