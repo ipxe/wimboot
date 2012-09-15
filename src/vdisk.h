@@ -358,8 +358,8 @@ struct vdisk_fsinfo {
  *****************************************************************************
  */
 
-/** A directory entry */
-struct vdisk_directory_entry {
+/** An 8.3 filename record */
+struct vdisk_short_filename {
 	/** Filename */
 	char filename[8];
 	/** Extension */
@@ -388,18 +388,6 @@ struct vdisk_directory_entry {
 	uint32_t size;
 } __attribute__ (( packed ));
 
-/** Magic marker for deleted files */
-#define VDISK_DIRENT_FILENAME0_DELETED 0xe5
-
-/** Directory entry attributes */
-enum vdisk_directory_entry_attributes {
-	VDISK_READ_ONLY = 0x01,
-	VDISK_HIDDEN = 0x02,
-	VDISK_SYSTEM = 0x04,
-	VDISK_VOLUME_LABEL = 0x08,
-	VDISK_DIRECTORY = 0x10,
-};
-
 /** A long filename record */
 struct vdisk_long_filename {
 	/** Sequence number */
@@ -420,6 +408,15 @@ struct vdisk_long_filename {
 	uint16_t name_3[2];
 } __attribute__ (( packed ));
 
+/** Directory entry attributes */
+enum vdisk_directory_entry_attributes {
+	VDISK_READ_ONLY = 0x01,
+	VDISK_HIDDEN = 0x02,
+	VDISK_SYSTEM = 0x04,
+	VDISK_VOLUME_LABEL = 0x08,
+	VDISK_DIRECTORY = 0x10,
+};
+
 /** Long filename end-of-sequence marker */
 #define VDISK_LFN_END 0x40
 
@@ -427,17 +424,28 @@ struct vdisk_long_filename {
 #define VDISK_LFN_ATTR \
 	( VDISK_READ_ONLY | VDISK_HIDDEN | VDISK_SYSTEM | VDISK_VOLUME_LABEL )
 
+/** A directory entry */
+union vdisk_directory_entry {
+	/** Deleted file marker */
+	uint8_t deleted;
+	/** 8.3 filename */
+	struct vdisk_short_filename dos;
+	/** Long filename */
+	struct vdisk_long_filename lfn;
+} __attribute__ (( packed ));
+
+/** Magic marker for deleted files */
+#define VDISK_DIRENT_DELETED 0xe5
+
 /** Number of directory entries per sector */
 #define VDISK_DIRENT_PER_SECTOR					\
 	( VDISK_SECTOR_SIZE /					\
-	  sizeof ( struct vdisk_directory_entry ) )
+	  sizeof ( union vdisk_directory_entry ) )
 
 /** A directory sector */
-union vdisk_directory {
+struct vdisk_directory {
 	/** Entries */
-	struct vdisk_directory_entry entry[VDISK_DIRENT_PER_SECTOR];
-	/** Long filename records */
-	struct vdisk_long_filename lfn[VDISK_DIRENT_PER_SECTOR];
+	union vdisk_directory_entry entry[VDISK_DIRENT_PER_SECTOR];
 } __attribute__ (( packed ));
 
 /*****************************************************************************
@@ -503,6 +511,22 @@ union vdisk_directory {
 
 /** Fonts directory LBA */
 #define VDISK_FONTS_LBA ( VDISK_VBR_LBA + VDISK_FONTS_SECTOR )
+
+/*****************************************************************************
+ *
+ * Resources directory
+ *
+ *****************************************************************************
+ */
+
+/** Resources directory cluster */
+#define VDISK_RESOURCES_CLUSTER 6
+
+/** Resources directory sector */
+#define VDISK_RESOURCES_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_RESOURCES_CLUSTER )
+
+/** Resources directory LBA */
+#define VDISK_RESOURCES_LBA ( VDISK_VBR_LBA + VDISK_RESOURCES_SECTOR )
 
 /*****************************************************************************
  *
