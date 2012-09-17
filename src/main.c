@@ -36,6 +36,7 @@
 #include "vdisk.h"
 #include "cpio.h"
 #include "lznt1.h"
+#include "xca.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -58,6 +59,9 @@ const void *bootmgr;
 /** bootmgr.exe length */
 size_t bootmgr_len;
 
+/** Minimal length of embedded bootmgr.exe */
+#define BOOTMGR_MIN_LEN 16384
+
 /** Memory regions */
 enum {
 	WIMBOOT_REGION = 0,
@@ -65,6 +69,8 @@ enum {
 	INITRD_REGION,
 	NUM_REGIONS
 };
+
+static int add_file ( const char *name, const void *data, size_t len );
 
 /**
  * Wrap interrupt callback
@@ -162,6 +168,123 @@ static struct {
 };
 
 /**
+ * Test if a paragraph is empty
+ *
+ * @v pgh		Paragraph
+ * @ret is_empty	Paragraph is empty (all zeroes)
+ */
+static int is_empty_pgh ( const void *pgh ) {
+	const uint32_t *dwords = pgh;
+
+	return ( ( dwords[0] | dwords[1] | dwords[2] | dwords[3] ) == 0 );
+}
+
+/**
+ * Extract embedded bootmgr.exe
+ *
+ * @v data		File data
+ * @v len		Length
+ * @ret rc		Return status code
+ *
+ * bootmgr.exe is awkward to obtain, since it is not available as a
+ * standalone file on the installation media, or on an installed
+ * system, or in a Windows PE image as created by WAIK or WADK.  It
+ * can be extracted from a typical boot.wim image using ImageX, but
+ * this requires installation of the WAIK/WADK/wimlib.
+ *
+ * A compressed version of bootmgr.exe is contained within bootmgr,
+ * which is trivial to obtain.
+ */
+static int extract_bootmgr ( const void *data, size_t len ) {
+	const uint8_t *compressed;
+	size_t offset;
+	size_t compressed_len;
+	ssize_t ( * decompress ) ( const void *data, size_t len, void *buf );
+	ssize_t decompressed_len;
+	size_t padded_len;
+
+	/* Look for an embedded compressed bootmgr.exe on a paragraph
+	 * boundary.
+	 */
+	for ( offset = BOOTMGR_MIN_LEN ; offset < ( len - BOOTMGR_MIN_LEN ) ;
+	      offset += 0x10 ) {
+
+		/* Initialise checks */
+		decompress = NULL;
+		compressed = ( data + offset );
+		compressed_len = ( len - offset );
+
+		/* Check for an embedded LZNT1-compressed bootmgr.exe.
+		 * Since there is no way for LZNT1 to compress the
+		 * initial "MZ" bytes of bootmgr.exe, we look for this
+		 * signature starting three bytes after a paragraph
+		 * boundary, with a preceding tag byte indicating that
+		 * these two bytes would indeed be uncompressed.
+		 */
+		if ( ( ( compressed[0x02] & 0x03 ) == 0x00 ) &&
+		     ( compressed[0x03] == 'M' ) &&
+		     ( compressed[0x04] == 'Z' ) ) {
+			DBG ( "...checking for LZNT1-compressed bootmgr.exe at "
+			      "+%#zx\n", offset );
+			decompress = lznt1_decompress;
+		}
+
+		/* Check for an embedded XCA-compressed bootmgr.exe.
+		 * The bytes 0x00, 'M', and 'Z' will always be
+		 * present, and so the corresponding symbols must have
+		 * a non-zero Huffman length.  The embedded image
+		 * tends to have a large block of zeroes immediately
+		 * beforehand, which we check for.  It's implausible
+		 * that the compressed data could contain substantial
+		 * runs of zeroes, so we check for that too, in order
+		 * to eliminate some common false positive matches.
+		 */
+		if ( ( ( compressed[0x00] & 0x0f ) != 0x00 ) &&
+		     ( ( compressed[0x26] & 0xf0 ) != 0x00 ) &&
+		     ( ( compressed[0x2d] & 0x0f ) != 0x00 ) &&
+		     ( is_empty_pgh ( compressed - 0x10 ) ) &&
+		     ( ! is_empty_pgh ( ( compressed + 0x400 ) ) ) &&
+		     ( ! is_empty_pgh ( ( compressed + 0x800 ) ) ) &&
+		     ( ! is_empty_pgh ( ( compressed + 0xc00 ) ) ) ) {
+			DBG ( "...checking for XCA-compressed bootmgr.exe at "
+			      "+%#zx\n", offset );
+			decompress = xca_decompress;
+		}
+
+		/* If we have not found a possible bootmgr.exe, skip
+		 * to the next paragraph.
+		 */
+		if ( ! decompress )
+			continue;
+
+		/* Find length of decompressed image */
+		decompressed_len = decompress ( compressed, compressed_len,
+						NULL );
+		if ( decompressed_len < 0 ) {
+			/* May be a false positive signature match */
+			continue;
+		}
+
+		/* Prepend decompressed image to initrd */
+		DBG ( "...extracting embedded bootmgr.exe\n" );
+		padded_len = ( ( decompressed_len + PAGE_SIZE - 1 ) &
+			       ~( PAGE_SIZE - 1 ) );
+		initrd -= padded_len;
+		initrd_len += padded_len;
+		decompress ( compressed, compressed_len, initrd );
+
+		/* Add decompressed image */
+		return add_file ( "bootmgr.exe", initrd, decompressed_len );
+	}
+
+	/* Treat as non-fatal; a separate copy of bootmgr.exe may
+	 * still be provided.
+	 */
+	DBG ( "...no embedded bootmgr.exe found\n" );
+	return 0;
+}
+
+/**
  * File handler
  *
  * @v name		File name
@@ -171,6 +294,7 @@ static struct {
  */
 static int add_file ( const char *name, const void *data, size_t len ) {
 	static unsigned int idx = 0;
+	int rc;
 
 	/* Sanity check */
 	if ( idx >= VDISK_MAX_FILES ) {
@@ -193,51 +317,8 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 
 	/* Check for bootmgr */
 	if ( strcasecmp ( name, "bootmgr" ) == 0 ) {
-		const uint8_t *compressed;
-		size_t offset;
-		size_t compressed_len;
-		ssize_t decompressed_len;
-		size_t padded_len;
-
-		/* Look for an embedded compressed bootmgr.exe.  Since
-		 * there is no way for LZNT1 to compress the initial
-		 * "MZ" bytes of bootmgr.exe, we look for this
-		 * signature starting three bytes after a paragraph
-		 * boundary, with a preceding tag byte indicating that
-		 * these two bytes would indeed be uncompressed.
-		 */
-		for ( offset = 0 ; offset < ( len - 5 ) ; offset += 16 ) {
-
-			/* Check signature */
-			compressed = ( data + offset );
-			if ( ( ( compressed[2] & 0x03 ) != 0x00 ) ||
-			     ( compressed[3] != 'M' ) ||
-			     ( compressed[4] != 'Z' ) ) {
-				continue;
-			}
-			compressed_len = ( len - offset );
-
-			/* Find length of decompressed image */
-			decompressed_len = lznt1_decompress ( compressed,
-							      compressed_len,
-							      NULL );
-			if ( decompressed_len < 0 ) {
-				/* May be a false positive signature match */
-				continue;
-			}
-
-			/* Prepend decompressed image to initrd */
-			DBG ( "...extracting embedded bootmgr.exe\n" );
-			padded_len = ( ( decompressed_len + PAGE_SIZE - 1 ) &
-				       ~( PAGE_SIZE - 1 ) );
-			initrd -= padded_len;
-			initrd_len += padded_len;
-			lznt1_decompress ( compressed, compressed_len, initrd );
-
-			/* Add decompressed image */
-			return add_file ( "bootmgr.exe", initrd,
-					  decompressed_len );
-		}
+		if ( ( rc = extract_bootmgr ( data, len ) ) != 0 )
+			return rc;
 	}
 
 	return 0;
