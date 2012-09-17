@@ -118,6 +118,10 @@ static inline void bochsbp ( void ) {
 		}						\
 	} while ( 0 )
 
+/* Branch prediction macros */
+#define likely( x ) __builtin_expect ( !! (x), 1 )
+#define unlikely( x ) __builtin_expect ( (x), 0 )
+
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
 extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))
