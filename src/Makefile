@@ -1,4 +1,4 @@
-VERSION := v0.9.3
+VERSION := v1.0.0
 
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o
