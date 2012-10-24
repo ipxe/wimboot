@@ -105,6 +105,10 @@ int cpio_extract ( const void *data, size_t len,
 			return -1;
 		}
 
+		/* If we reach the trailer, we're done */
+		if ( strcmp ( file_name, CPIO_TRAILER ) == 0 )
+			break;
+
 		/* Process file */
 		if ( ( rc = file ( file_name, file_data, file_len ) ) != 0 )
 			return rc;

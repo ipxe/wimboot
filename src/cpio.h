@@ -68,6 +68,9 @@ struct cpio_header {
 /** CPIO magic */
 #define CPIO_MAGIC "070701"
 
+/** CPIO trailer */
+#define CPIO_TRAILER "TRAILER!!!"
+
 extern int cpio_extract ( const void *data, size_t len,
 			  int ( * file ) ( const char *name, const void *data,
 					   size_t len ) );
