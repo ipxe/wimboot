@@ -107,6 +107,25 @@ int memcmp ( const void *src1, const void *src2, size_t len ) {
 }
 
 /**
+ * Compare two strings
+ *
+ * @v str1		First string
+ * @v str2		Second string
+ * @ret diff		Difference
+ */
+int strcmp ( const char *str1, const char *str2 ) {
+	int c1;
+	int c2;
+
+	do {
+		c1 = *(str1++);
+		c2 = *(str2++);
+	} while ( ( c1 != '\0' ) && ( c1 == c2 ) );
+
+	return ( c1 - c2 );
+}
+
+/**
  * Compare two strings, case-insensitively
  *
  * @v str1		First string
