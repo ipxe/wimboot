@@ -70,7 +70,6 @@ int cpio_extract ( const void *data, size_t len,
 	const struct cpio_header *cpio;
 	const char *file_name;
 	const void *file_data;
-	const void *next;
 	size_t file_name_len;
 	size_t file_len;
 	size_t cpio_len;
@@ -98,8 +97,9 @@ int cpio_extract ( const void *data, size_t len,
 		file_data = ( data + cpio_align ( sizeof ( *cpio ) +
 						  file_name_len ) );
 		file_len = cpio_value ( cpio->c_filesize );
-		next = ( file_data + cpio_align ( file_len ) );
-		cpio_len = ( next - data );
+		cpio_len = ( file_data + file_len - data );
+		if ( cpio_len < len )
+			cpio_len = cpio_align ( cpio_len );
 		if ( cpio_len > len ) {
 			DBG ( "Truncated CPIO file\n" );
 			return -1;
