@@ -70,12 +70,26 @@ int cpio_extract ( const void *data, size_t len,
 	const struct cpio_header *cpio;
 	const char *file_name;
 	const void *file_data;
+	const uint32_t *pad;
 	size_t file_name_len;
 	size_t file_len;
 	size_t cpio_len;
 	int rc;
 
-	while ( len ) {
+	while ( 1 ) {
+
+		/* Skip over any padding */
+		while ( len >= sizeof ( *pad ) ) {
+			pad = data;
+			if ( *pad )
+				break;
+			data += sizeof ( *pad );
+			len -= sizeof ( *pad );
+		}
+
+		/* Stop if we have reached the end of the archive */
+		if ( ! len )
+			return 0;
 
 		/* Sanity check */
 		if ( len < sizeof ( *cpio ) ) {
@@ -107,7 +121,7 @@ int cpio_extract ( const void *data, size_t len,
 
 		/* If we reach the trailer, we're done */
 		if ( strcmp ( file_name, CPIO_TRAILER ) == 0 )
-			break;
+			return 0;
 
 		/* Process file */
 		if ( ( rc = file ( file_name, file_data, file_len ) ) != 0 )
@@ -117,6 +131,4 @@ int cpio_extract ( const void *data, size_t len,
 		data += cpio_len;
 		len -= cpio_len;
 	}
-
-	return 0;
 }
