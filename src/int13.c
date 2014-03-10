@@ -167,6 +167,19 @@ static void int13_extended_read ( struct bootapp_callback_params *params ) {
 }
 
 /**
+ * INT 13, 43 - Extended write
+ *
+ * @v int13		Emulated drive
+ * @v ds:si		Disk address packet
+ * @ret status		Status code
+ */
+static void int13_extended_write ( struct bootapp_callback_params *params ) {
+
+	/* Fake success */
+	params->ah = 0;
+}
+
+/**
  * Emulate INT 13 drive
  *
  * @v params		Parameters
@@ -202,6 +215,9 @@ void emulate_int13 ( struct bootapp_callback_params *params ) {
 			break;
 		case INT13_EXTENDED_READ:
 			int13_extended_read ( params );
+			break;
+		case INT13_EXTENDED_WRITE:
+			int13_extended_write ( params );
 			break;
 		default:
 			DBG ( "Unrecognised INT 13,%02x\n", command );

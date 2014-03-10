@@ -39,6 +39,8 @@
 #define INT13_EXTENSION_CHECK		0x41
 /** Extended read */
 #define INT13_EXTENDED_READ		0x42
+/** Extended write */
+#define INT13_EXTENDED_WRITE		0x43
 /** Get extended drive parameters */
 #define INT13_GET_EXTENDED_PARAMETERS	0x48
 
