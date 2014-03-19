@@ -191,6 +191,7 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 	const void *end = ( src + len );
 	uint8_t *out = buf;
 	size_t out_len = 0;
+	size_t out_len_threshold = 0;
 	const struct xca_huf_len *lengths;
 	struct xca_symbols sym;
 	uint32_t accum = 0;
@@ -208,7 +209,7 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 	while ( src < end ) {
 
 		/* (Re)initialise decompressor if applicable */
-		if ( ( out_len % XCA_BLOCK_SIZE ) == 0 ) {
+		if ( out_len >= out_len_threshold ) {
 
 			/* Construct symbol table */
 			lengths = src;
@@ -227,6 +228,9 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 			accum <<= 16;
 			accum |= XCA_GET16 ( src );
 			extra_bits = 16;
+
+			/* Determine next threshold */
+			out_len_threshold = ( out_len + XCA_BLOCK_SIZE );
 		}
 
 		/* Determine symbol */
