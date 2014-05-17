@@ -78,11 +78,25 @@ static int add_file ( const char *name, const void *data, size_t len );
  * @v params		Parameters
  */
 static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
+	uint16_t *attributes;
 
-	/* Intercept INT 13 calls for the emulated drive */
+	/* Handle/modify/pass-through interrupt as required */
 	if ( params->vector.interrupt == 0x13 ) {
+
+		/* Intercept INT 13 calls for the emulated drive */
 		emulate_int13 ( params );
+
+	} else if ( ( params->vector.interrupt == 0x10 ) &&
+		    ( params->ax == 0x4f01 ) ) {
+
+		/* Mark all VESA video modes as unsupported */
+		attributes = REAL_PTR ( params->es, params->di );
+		call_interrupt ( params );
+		*attributes &= ~0x0001;
+
 	} else {
+
+		/* Pass through interrupt */
 		call_interrupt ( params );
 	}
 }
