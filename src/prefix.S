@@ -32,12 +32,6 @@
 /** Sector size */
 #define SECTOR_SIZE 512
 
-/** Prefix be loaded to this real-mode segment */
-#define PREFIX_SEG 0x1000
-
-/** Prefix will be loaded to this linear address */
-#define PREFIX_BASE ( PREFIX_SEG << 4 )
-
 /** Protected-mode code will be loaded high */
 #define LOADED_HIGH 0x01
 
@@ -47,7 +41,7 @@
 /** Protected-mode bit in CR0 */
 #define CR0_PE 0x01
 
-/** 32-bit protected mode code segment with base PREFIX_BASE */
+/** 32-bit protected mode code segment based at real-mode %cs:0000 */
 #define PREFIX_CS 0x08
 
 /** 32 bit protected mode flat code segment */
@@ -106,11 +100,20 @@ ramdisk_max:
 	/* Setup code */
 setup:
 	/* Reset %cs so that labels work */
-	ljmp	$PREFIX_SEG, $1f
+	pushw	%ds
+	pushw	$1f
+	lret
 1:
+	/* Fix up GDT */
+	xorl	%eax, %eax
+	movw	%cs, %ax
+	shll	$4, %eax
+	addl	%eax, ( gdt + 2 )
+	addl	%eax, ( gdt + PREFIX_CS + 2 )
+
 	/* Switch to protected mode and jump to startup code */
 	cli
-	data32 lgdt %cs:gdt
+	data32 lgdt gdt
 	movl	%cr0, %eax
 	orb	$CR0_PE, %al
 	movl	%eax, %cr0
@@ -156,11 +159,11 @@ setup:
 	/* Global descriptor table */
 gdt:
 	.word	gdt_limit
-	.long	( PREFIX_BASE + gdt )
-	/* 32-bit protected mode code segment with base PREFIX_BASE */
+	.long	gdt
+	/* 32-bit protected mode code segment based at real-mode %cs:0000 */
 	.org	( gdt + PREFIX_CS )
-	.word	0xffff, ( PREFIX_BASE & 0xffff )
-	.byte	( PREFIX_BASE >> 16 ), 0x9f, 0xcf, 0
+	.word	0xffff, 0
+	.byte	0, 0x9f, 0xcf, 0
 	/* 32 bit protected mode flat code segment */
 	.org	( gdt + PREFIX_FLAT_CS )
 	.word	0xffff, 0
