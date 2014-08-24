@@ -32,6 +32,7 @@
 #define KC_CMD_RESET 0xfe
 
 	.arch	i386
+	.code32
 
 	/* Startup code */
 	.section ".text", "ax", @progbits

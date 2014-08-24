@@ -48,6 +48,7 @@
 #define CR0_PG 0x80000000
 
 	.arch	i386
+	.code32
 
 	/* Call an arbitrary real-mode function */
 	.section ".text", "ax", @progbits
