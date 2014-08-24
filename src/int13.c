@@ -175,16 +175,17 @@ void emulate_int13 ( struct bootapp_callback_params *params ) {
 	int command = params->ah;
 	int drive = params->dl;
 	int min_num_drives;
+	unsigned long eflags;
 
 	if ( drive == vdisk_drive ) {
 
 		/* Emulated drive - handle internally */
 
 		/* Populate eflags with a sensible starting value */
-		__asm__ ( "pushfl\n\t"
-			  "popl %0\n\t"
-			  : "=r" ( params->eflags ) );
-		params->eflags &= ~CF;
+		__asm__ ( "pushf\n\t"
+			  "pop %0\n\t"
+			  : "=r" ( eflags ) );
+		params->eflags = ( eflags & ~CF );
 
 		/* Handle command */
 		switch ( command ) {

@@ -29,7 +29,7 @@
 
 /** Construct a pointer from a real-mode segment:offset address */
 #define REAL_PTR( segment, offset ) \
-	( ( void * ) ( ( (segment) << 4 ) + offset ) )
+	( ( void * ) ( intptr_t ) ( ( (segment) << 4 ) + offset ) )
 
 /** Get drive parameters */
 #define INT13_GET_PARAMETERS		0x08

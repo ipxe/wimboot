@@ -75,12 +75,12 @@ int load_pe ( const void *data, size_t len, struct loaded_pe *pe ) {
 	}
 	opthdr_offset = ( pehdr_offset + sizeof ( *pehdr ) );
 	opthdr = ( data + opthdr_offset );
-	pe->base = ( ( void * ) ( opthdr->base ) );
+	pe->base = ( ( void * ) ( intptr_t ) ( opthdr->base ) );
 	section_offset = ( opthdr_offset + pehdr->coff.opthdr_len );
 	section = ( data + section_offset );
 
 	/* Load header into memory */
-	DBG2 ( "...headers to %p+%#zx\n", pe->base, opthdr->header_len );
+	DBG2 ( "...headers to %p+%#x\n", pe->base, opthdr->header_len );
 	memcpy ( pe->base, data, opthdr->header_len );
 	end = ( pe->base + opthdr->header_len );
 
