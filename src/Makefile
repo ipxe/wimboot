@@ -1,7 +1,7 @@
 VERSION := v1.0.6
 
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
-OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o
+OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o die.o efi.o efimain.o
 
 OBJECTS_i386 := $(patsubst %.o,%.i386.o,$(OBJECTS))
 OBJECTS_x86_64 := $(patsubst %.o,%.x86_64.o,$(OBJECTS))
@@ -9,11 +9,17 @@ OBJECTS_i386_x86_64 := $(patsubst %.o,%.i386.x86_64.o,$(OBJECTS))
 
 HEADERS := $(wildcard *.h)
 
+HOST_CC		:= $(CC)
 OBJCOPY 	:= objcopy
 AR		:= ar
 RANLIB		:= ranlib
+BINUTILS_DIR	:= /usr
+BFD_DIR		:= $(BINUTILS_DIR)
+ZLIB_DIR	:= /usr
 
-CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I.
+HOST_CFLAGS += -Wall -W -Werror
+
+CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
 CFLAGS += -DVERSION="\"$(VERSION)\""
 
 # Inhibit -fno-stack-protector
@@ -43,8 +49,9 @@ wimboot : wimboot.x86_64 Makefile
 	cp $< $@
 	cp $@ ../$@
 
-wimboot.% : wimboot.%.elf Makefile
+wimboot.% : wimboot.%.elf efireloc Makefile
 	$(OBJCOPY) -Obinary $< $@
+	./efireloc $< $@
 
 wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 	$(LD) -m elf_$* -T script.lds -o $@ -q -Map wimboot.$*.map \
@@ -107,8 +114,21 @@ lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 
 ###############################################################################
 #
+# EFI relocator
+
+EFIRELOC_CFLAGS := -I$(BINUTILS_DIR)/include -I$(BFD_DIR)/include \
+		   -I$(ZLIB_DIR)/include -idirafter .
+EFIRELOC_LDFLAGS := -L$(BINUTILS_DIR)/lib -L$(BFD_DIR)/lib -L$(ZLIB_DIR)/lib \
+		    -lbfd -ldl -liberty -lz -Wl,--no-warn-search-mismatch
+
+efireloc : efireloc.c Makefile
+	$(CC) $(HOST_CFLAGS) $(EFIRELOC_CFLAGS) $< $(EFIRELOC_LDFLAGS) -o $@
+
+###############################################################################
+#
 # Cleanup
 
 clean :
 	rm -f *.o *.a *.elf
+	rm -f efireloc
 	rm -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot

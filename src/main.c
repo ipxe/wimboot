@@ -379,29 +379,3 @@ int main ( void ) {
 	pe.entry ( &bootapps.bootapp );
 	die ( "FATAL: bootmgr.exe returned\n" );
 }
-
-/**
- * Handle fatal errors
- *
- * @v fmt	Error message format string
- * @v ...	Arguments
- */
-void die ( const char *fmt, ... ) {
-	struct bootapp_callback_params params;
-	va_list args;
-
-	/* Print message */
-	va_start ( args, fmt );
-	vprintf ( fmt, args );
-	va_end ( args );
-
-	/* Wait for keypress */
-	printf ( "Press a key to reboot..." );
-	memset ( &params, 0, sizeof ( params ) );
-	params.vector.interrupt = 0x16;
-	call_interrupt ( &params );
-	printf ( "\n" );
-
-	/* Reboot system */
-	reboot();
-}

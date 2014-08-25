@@ -2,3 +2,4 @@ wimboot
 *.o
 *.elf
 *.map
+efireloc
