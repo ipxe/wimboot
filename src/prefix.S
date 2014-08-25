@@ -26,6 +26,13 @@
 
 #include "wimboot.h"
 
+/* Refer to i386 symbols as needed */
+#if __x86_64__
+#define i386(symbol) __i386_ ## symbol
+#else
+#define i386(symbol) symbol
+#endif
+
 /** Standard number of setup sectors */
 #define SETUP_SECTS 4
 
@@ -146,14 +153,14 @@ setup:
 
 	/* Copy parameters required by runtime */
 	movl	%cs:cmd_line_ptr, %eax
-	movl	%eax, cmdline
+	movl	%eax, i386(cmdline)
 	movl	%cs:ramdisk_image, %eax
-	movl	%eax, initrd
+	movl	%eax, i386(initrd)
 	movl	%cs:ramdisk_size, %eax
-	movl	%eax, initrd_len
+	movl	%eax, i386(initrd_len)
 
 	/* Jump to payload */
-	ljmp	$PREFIX_FLAT_CS, $startup
+	ljmp	$PREFIX_FLAT_CS, $i386(startup)
 	.size	setup, . - setup
 
 	/* Global descriptor table */

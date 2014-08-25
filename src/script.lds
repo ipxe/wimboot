@@ -59,6 +59,10 @@ SECTIONS {
 
 	_end = .;
 
+	/* Symbols required by i386.x86_64 objects */
+	__i386__start = _start;
+	__i386__end = _end;
+
 	/DISCARD/ : {
 		*(.comment)
 		*(.comment.*)
