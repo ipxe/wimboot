@@ -28,6 +28,7 @@
 #include "wimboot.h"
 #include "efi.h"
 #include "efifile.h"
+#include "efiblock.h"
 #include "efiboot.h"
 
 /**
@@ -48,6 +49,8 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 		EFI_DEVICE_PATH_PROTOCOL *path;
 		void *intf;
 	} path;
+	EFI_HANDLE vdisk = NULL;
+	EFI_HANDLE vpartition = NULL;
 	EFI_STATUS efirc;
 
 	/* Record EFI handle and system table */
@@ -80,8 +83,11 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 	/* Extract files from file system */
 	efi_extract ( loaded.image->DeviceHandle );
 
+	/* Install virtual disk */
+	efi_install ( &vdisk, &vpartition );
+
 	/* Invoke boot manager */
-	efi_boot ( path.path );
+	efi_boot ( path.path, vpartition );
 
 	return 0;
 }

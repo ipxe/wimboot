@@ -30,6 +30,6 @@
 #include "efi.h"
 #include "efi/Protocol/DevicePath.h"
 
-extern void efi_boot ( EFI_DEVICE_PATH_PROTOCOL *parent );
+extern void efi_boot ( EFI_DEVICE_PATH_PROTOCOL *parent, EFI_HANDLE handle );
 
 #endif /* _EFIBOOT_H */

@@ -26,9 +26,14 @@
 
 #include "wimboot.h"
 #include "efi.h"
+#include "efi/Protocol/BlockIo.h"
 #include "efi/Protocol/DevicePath.h"
 #include "efi/Protocol/LoadedImage.h"
 #include "efi/Protocol/SimpleFileSystem.h"
+
+/** Block I/O protocol GUID */
+EFI_GUID efi_block_io_protocol_guid
+	= EFI_BLOCK_IO_PROTOCOL_GUID;
 
 /** Device path protocol GUID */
 EFI_GUID efi_device_path_protocol_guid
