@@ -159,8 +159,10 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
  * Initialise empty directory
  *
  * @v dir		Virtual directory
+ * @ret dirent		Starting (i.e. final) directory entry
  */
-static void vdisk_empty_dir ( struct vdisk_directory *dir ) {
+static union vdisk_directory_entry *
+vdisk_empty_dir ( struct vdisk_directory *dir ) {
 	unsigned int i;
 
 	/* Mark all entries as present and deleted */
@@ -168,6 +170,8 @@ static void vdisk_empty_dir ( struct vdisk_directory *dir ) {
 	for ( i = 0 ; i < VDISK_DIRENT_PER_SECTOR ; i++ ) {
 		dir->entry[i].deleted = VDISK_DIRENT_DELETED;
 	}
+
+	return &dir->entry[ VDISK_DIRENT_PER_SECTOR - 1 ];
 }
 
 /**
@@ -258,11 +262,10 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 static void vdisk_root ( uint64_t lba __unused, unsigned int count __unused,
 			 void *data ) {
 	struct vdisk_directory *dir = data;
-	union vdisk_directory_entry *dirent
-		= &dir->entry[ VDISK_DIRENT_PER_SECTOR - 1 ];
+	union vdisk_directory_entry *dirent;
 
 	/* Construct subdirectories */
-	vdisk_empty_dir ( dir );
+	dirent = vdisk_empty_dir ( dir );
 	dirent = vdisk_directory_entry ( dirent, "BOOT", 0, VDISK_DIRECTORY,
 					 VDISK_BOOT_CLUSTER );
 	dirent = vdisk_directory_entry ( dirent, "SOURCES", 0, VDISK_DIRECTORY,
@@ -279,11 +282,10 @@ static void vdisk_root ( uint64_t lba __unused, unsigned int count __unused,
 static void vdisk_boot ( uint64_t lba __unused, unsigned int count __unused,
 			 void *data ) {
 	struct vdisk_directory *dir = data;
-	union vdisk_directory_entry *dirent
-		= &dir->entry[ VDISK_DIRENT_PER_SECTOR - 1 ];
+	union vdisk_directory_entry *dirent;
 
 	/* Construct subdirectories */
-	vdisk_empty_dir ( dir );
+	dirent = vdisk_empty_dir ( dir );
 	dirent = vdisk_directory_entry ( dirent, "FONTS", 0, VDISK_DIRECTORY,
 					 VDISK_FONTS_CLUSTER );
 	dirent = vdisk_directory_entry ( dirent, "RESOURCES", 0,
