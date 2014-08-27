@@ -28,6 +28,7 @@
 #include "wimboot.h"
 #include "efi.h"
 #include "efifile.h"
+#include "efiboot.h"
 
 /**
  * EFI entry point
@@ -43,6 +44,10 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 		EFI_LOADED_IMAGE_PROTOCOL *image;
 		void *interface;
 	} loaded;
+	union {
+		EFI_DEVICE_PATH_PROTOCOL *path;
+		void *intf;
+	} path;
 	EFI_STATUS efirc;
 
 	/* Record EFI handle and system table */
@@ -63,8 +68,20 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 		      ( ( unsigned long ) efirc ) );
 	}
 
+	/* Get device path protocol */
+	if ( ( efirc = bs->OpenProtocol ( loaded.image->DeviceHandle,
+					  &efi_device_path_protocol_guid,
+					  &path.intf, efi_image_handle, NULL,
+					  EFI_OPEN_PROTOCOL_GET_PROTOCOL ))!=0){
+		die ( "Could not open device path protocol: %#lx\n",
+		      ( ( unsigned long ) efirc ) );
+	}
+
 	/* Extract files from file system */
 	efi_extract ( loaded.image->DeviceHandle );
+
+	/* Invoke boot manager */
+	efi_boot ( path.path );
 
 	return 0;
 }

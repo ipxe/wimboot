@@ -2,7 +2,7 @@ VERSION := v1.0.6
 
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o die.o efi.o efimain.o
-OBJECTS += efiguid.o efifile.o
+OBJECTS += efiguid.o efifile.o efipath.o efiboot.o
 
 OBJECTS_i386 := $(patsubst %.o,%.i386.o,$(OBJECTS))
 OBJECTS_x86_64 := $(patsubst %.o,%.x86_64.o,$(OBJECTS))

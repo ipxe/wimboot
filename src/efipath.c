@@ -1,6 +1,3 @@
-#ifndef _EFI_H
-#define _EFI_H
-
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
  *
@@ -23,28 +20,27 @@
 /**
  * @file
  *
- * EFI definitions
+ * EFI device paths
  *
  */
 
-/* EFIAPI definition */
-#if __x86_64__
-#define EFIAPI __attribute__ (( ms_abi ))
-#else
-#define EFIAPI
-#endif
+#include "wimboot.h"
+#include "efi.h"
+#include "efipath.h"
 
-/* EFI headers rudely redefine NULL */
-#undef NULL
+/**
+ * Find end of device path
+ *
+ * @v path		Path to device
+ * @ret path_end	End of device path
+ */
+EFI_DEVICE_PATH_PROTOCOL * efi_devpath_end ( EFI_DEVICE_PATH_PROTOCOL *path ) {
 
-#include "efi/Uefi.h"
-#include "efi/Protocol/LoadedImage.h"
-
-extern EFI_SYSTEM_TABLE *efi_systab;
-extern EFI_HANDLE efi_image_handle;
-
-extern EFI_GUID efi_device_path_protocol_guid;
-extern EFI_GUID efi_loaded_image_protocol_guid;
-extern EFI_GUID efi_simple_file_system_protocol_guid;
-
-#endif /* _EFI_H */
+	while ( path->Type != END_DEVICE_PATH_TYPE ) {
+		path = ( ( ( void * ) path ) +
+			 /* There's this amazing new-fangled thing known as
+			  * a UINT16, but who wants to use one of those? */
+			 ( ( path->Length[1] << 8 ) | path->Length[0] ) );
+	}
+	return path;
+}
