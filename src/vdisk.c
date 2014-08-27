@@ -270,6 +270,8 @@ static void vdisk_root ( uint64_t lba __unused, unsigned int count __unused,
 					 VDISK_BOOT_CLUSTER );
 	dirent = vdisk_directory_entry ( dirent, "SOURCES", 0, VDISK_DIRECTORY,
 					 VDISK_SOURCES_CLUSTER );
+	dirent = vdisk_directory_entry ( dirent, "EFI", 0, VDISK_DIRECTORY,
+					 VDISK_EFI_CLUSTER );
 }
 
 /**
@@ -336,6 +338,45 @@ static void vdisk_resources ( uint64_t lba __unused,
 
 	/* Construct subdirectories */
 	vdisk_empty_dir ( dir );
+}
+
+/**
+ * Read subdirectories from virtual EFI directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_efi ( uint64_t lba __unused, unsigned int count __unused,
+			void *data ) {
+	struct vdisk_directory *dir = data;
+	union vdisk_directory_entry *dirent;
+
+	/* Construct subdirectories */
+	dirent = vdisk_empty_dir ( dir );
+	dirent = vdisk_directory_entry ( dirent, "BOOT", 0, VDISK_DIRECTORY,
+					 VDISK_BOOT_CLUSTER );
+	dirent = vdisk_directory_entry ( dirent, "MICROSOFT", 0,
+					 VDISK_DIRECTORY,
+					 VDISK_MICROSOFT_CLUSTER );
+}
+
+/**
+ * Read subdirectories from virtual Microsoft directory
+ *
+ * @v lba		Starting LBA
+ * @v count		Number of blocks to read
+ * @v data		Data buffer
+ */
+static void vdisk_microsoft ( uint64_t lba __unused,
+			      unsigned int count __unused, void *data ) {
+	struct vdisk_directory *dir = data;
+	union vdisk_directory_entry *dirent;
+
+	/* Construct subdirectories */
+	dirent = vdisk_empty_dir ( dir );
+	dirent = vdisk_directory_entry ( dirent, "BOOT", 0, VDISK_DIRECTORY,
+					 VDISK_BOOT_CLUSTER );
 }
 
 /**
@@ -454,6 +495,9 @@ static struct vdisk_region vdisk_regions[] = {
 	VDISK_DIRECTORY_REGION ( "Fonts", vdisk_fonts, VDISK_FONTS_LBA ),
 	VDISK_DIRECTORY_REGION ( "Resources", vdisk_resources,
 				 VDISK_RESOURCES_LBA ),
+	VDISK_DIRECTORY_REGION ( "EFI", vdisk_efi, VDISK_EFI_LBA ),
+	VDISK_DIRECTORY_REGION ( "Microsoft", vdisk_microsoft,
+				 VDISK_MICROSOFT_LBA ),
 };
 
 /**

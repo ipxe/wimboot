@@ -530,6 +530,38 @@ struct vdisk_directory {
 
 /*****************************************************************************
  *
+ * EFI directory
+ *
+ *****************************************************************************
+ */
+
+/** EFI directory cluster */
+#define VDISK_EFI_CLUSTER 7
+
+/** EFI directory sector */
+#define VDISK_EFI_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_EFI_CLUSTER )
+
+/** EFI directory LBA */
+#define VDISK_EFI_LBA ( VDISK_VBR_LBA + VDISK_EFI_SECTOR )
+
+/*****************************************************************************
+ *
+ * Microsoft directory
+ *
+ *****************************************************************************
+ */
+
+/** Microsoft directory cluster */
+#define VDISK_MICROSOFT_CLUSTER 8
+
+/** Microsoft directory sector */
+#define VDISK_MICROSOFT_SECTOR VDISK_CLUSTER_SECTOR ( VDISK_MICROSOFT_CLUSTER )
+
+/** Microsoft directory LBA */
+#define VDISK_MICROSOFT_LBA ( VDISK_VBR_LBA + VDISK_MICROSOFT_SECTOR )
+
+/*****************************************************************************
+ *
  * Files
  *
  *****************************************************************************
