@@ -570,11 +570,19 @@ struct vdisk_directory {
 /** A virtual file */
 struct vdisk_file {
 	/** Filename (must be NUL-terminated) */
-	const char *name;
-	/** Data */
-	const void *data;
+	char name[32];
+	/** Opaque token */
+	void *opaque;
 	/** Length */
 	size_t len;
+	/** Read data
+	 *
+	 * @v data		Data buffer
+	 * @v opaque		Opaque token
+	 * @v offset		Starting offset
+	 * @v len		Length
+	 */
+	void ( * read ) ( void *data, void *opaque, size_t offset, size_t len );
 };
 
 extern struct vdisk_file vdisk_files[VDISK_MAX_FILES];

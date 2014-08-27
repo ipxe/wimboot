@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "wimboot.h"
 #include "efi.h"
+#include "efifile.h"
 
 /**
  * EFI entry point
@@ -37,14 +38,33 @@
  */
 EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 			     EFI_SYSTEM_TABLE *systab ) {
+	EFI_BOOT_SERVICES *bs;
+	union {
+		EFI_LOADED_IMAGE_PROTOCOL *image;
+		void *interface;
+	} loaded;
+	EFI_STATUS efirc;
 
 	/* Record EFI handle and system table */
 	efi_image_handle = image_handle;
 	efi_systab = systab;
+	bs = systab->BootServices;
 
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
 		 "bootloader -- http://ipxe.org/wimboot\n\n" );
+
+	/* Get loaded image protocol */
+	if ( ( efirc = bs->OpenProtocol ( image_handle,
+					  &efi_loaded_image_protocol_guid,
+					  &loaded.interface, image_handle, NULL,
+					  EFI_OPEN_PROTOCOL_GET_PROTOCOL ))!=0){
+		die ( "Could not open loaded image protocol: %#lx\n",
+		      ( ( unsigned long ) efirc ) );
+	}
+
+	/* Extract files from file system */
+	efi_extract ( loaded.image->DeviceHandle );
 
 	return 0;
 }

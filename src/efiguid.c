@@ -1,6 +1,3 @@
-#ifndef _EFI_H
-#define _EFI_H
-
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
  *
@@ -23,27 +20,19 @@
 /**
  * @file
  *
- * EFI definitions
+ * EFI GUIDs
  *
  */
 
-/* EFIAPI definition */
-#if __x86_64__
-#define EFIAPI __attribute__ (( ms_abi ))
-#else
-#define EFIAPI
-#endif
-
-/* EFI headers rudely redefine NULL */
-#undef NULL
-
-#include "efi/Uefi.h"
+#include "wimboot.h"
+#include "efi.h"
 #include "efi/Protocol/LoadedImage.h"
+#include "efi/Protocol/SimpleFileSystem.h"
 
-extern EFI_SYSTEM_TABLE *efi_systab;
-extern EFI_HANDLE efi_image_handle;
+/** Loaded image protocol GUID */
+EFI_GUID efi_loaded_image_protocol_guid
+	= EFI_LOADED_IMAGE_PROTOCOL_GUID;
 
-extern EFI_GUID efi_loaded_image_protocol_guid;
-extern EFI_GUID efi_simple_file_system_protocol_guid;
-
-#endif /* _EFI_H */
+/** Simple file system protocol GUID */
+EFI_GUID efi_simple_file_system_protocol_guid
+	= EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;

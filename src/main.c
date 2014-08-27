@@ -70,7 +70,7 @@ enum {
 	NUM_REGIONS
 };
 
-static int add_file ( const char *name, const void *data, size_t len );
+static int add_file ( const char *name, void *data, size_t len );
 
 /**
  * Wrap interrupt callback
@@ -299,6 +299,19 @@ static int extract_bootmgr ( const void *data, size_t len ) {
 }
 
 /**
+ * Read from file
+ *
+ * @v data		Data buffer
+ * @v opaque		Opaque token
+ * @v offset		Offset
+ * @v len		Length
+ */
+static void read_file ( void *data, void *opaque, size_t offset, size_t len ) {
+
+	memcpy ( data, ( opaque + offset ), len );
+}
+
+/**
  * File handler
  *
  * @v name		File name
@@ -306,7 +319,7 @@ static int extract_bootmgr ( const void *data, size_t len ) {
  * @v len		Length
  * @ret rc		Return status code
  */
-static int add_file ( const char *name, const void *data, size_t len ) {
+static int add_file ( const char *name, void *data, size_t len ) {
 	static unsigned int idx = 0;
 	int rc;
 
@@ -318,9 +331,11 @@ static int add_file ( const char *name, const void *data, size_t len ) {
 
 	/* Store file */
 	DBG ( "Loading %s at %p+%#zx\n", name, data, len );
-	vdisk_files[idx].name = name;
-	vdisk_files[idx].data = data;
+	snprintf ( vdisk_files[idx].name, sizeof ( vdisk_files[idx].name ),
+		   "%s", name );
+	vdisk_files[idx].opaque = data;
 	vdisk_files[idx].len = len;
+	vdisk_files[idx].read = read_file;
 	idx++;
 
 	/* Check for bootmgr.exe */

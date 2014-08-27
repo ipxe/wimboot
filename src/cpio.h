@@ -71,8 +71,8 @@ struct cpio_header {
 /** CPIO trailer */
 #define CPIO_TRAILER "TRAILER!!!"
 
-extern int cpio_extract ( const void *data, size_t len,
-			  int ( * file ) ( const char *name, const void *data,
+extern int cpio_extract ( void *data, size_t len,
+			  int ( * file ) ( const char *name, void *data,
 					   size_t len ) );
 
 #endif /* _CPIO_H */

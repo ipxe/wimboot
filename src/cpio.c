@@ -64,13 +64,13 @@ static unsigned long cpio_value ( const char *field ) {
  * @v file		File handler
  * @ret rc		Return status code
  */
-int cpio_extract ( const void *data, size_t len,
-		   int ( * file ) ( const char *name, const void *data,
+int cpio_extract ( void *data, size_t len,
+		   int ( * file ) ( const char *name, void *data,
 				    size_t len ) ) {
 	const struct cpio_header *cpio;
-	const char *file_name;
-	const void *file_data;
 	const uint32_t *pad;
+	const char *file_name;
+	void *file_data;
 	size_t file_name_len;
 	size_t file_len;
 	size_t cpio_len;

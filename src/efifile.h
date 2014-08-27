@@ -1,5 +1,5 @@
-#ifndef _EFI_H
-#define _EFI_H
+#ifndef _EFIFILE_H
+#define _EFIFILE_H
 
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
@@ -23,27 +23,14 @@
 /**
  * @file
  *
- * EFI definitions
+ * EFI file system access
  *
  */
 
-/* EFIAPI definition */
-#if __x86_64__
-#define EFIAPI __attribute__ (( ms_abi ))
-#else
-#define EFIAPI
-#endif
+#include "efi.h"
+#include "efi/Protocol/SimpleFileSystem.h"
+#include "efi/Guid/FileInfo.h"
 
-/* EFI headers rudely redefine NULL */
-#undef NULL
+extern void efi_extract ( EFI_HANDLE handle );
 
-#include "efi/Uefi.h"
-#include "efi/Protocol/LoadedImage.h"
-
-extern EFI_SYSTEM_TABLE *efi_systab;
-extern EFI_HANDLE efi_image_handle;
-
-extern EFI_GUID efi_loaded_image_protocol_guid;
-extern EFI_GUID efi_simple_file_system_protocol_guid;
-
-#endif /* _EFI_H */
+#endif /* _EFIFILE_H */
