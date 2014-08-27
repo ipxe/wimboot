@@ -9,6 +9,4 @@
 
 #define FILE_LICENCE(x)
 
-#define __unused __attribute__ (( unused ))
-
 #include "ipxe/vsprintf.c"

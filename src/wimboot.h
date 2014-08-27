@@ -122,6 +122,9 @@ static inline void bochsbp ( void ) {
 #define likely( x ) __builtin_expect ( !! (x), 1 )
 #define unlikely( x ) __builtin_expect ( (x), 0 )
 
+/* Mark parameter as unused */
+#define __unused __attribute__ (( unused ))
+
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
 extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))

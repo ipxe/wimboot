@@ -41,8 +41,7 @@ struct vdisk_file vdisk_files[VDISK_MAX_FILES];
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_mbr ( uint64_t lba __attribute__ (( unused )),
-			unsigned int count __attribute__ (( unused )),
+static void vdisk_mbr ( uint64_t lba __unused, unsigned int count __unused,
 			void *data ) {
 	struct vdisk_mbr *mbr = data;
 
@@ -63,8 +62,7 @@ static void vdisk_mbr ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_vbr ( uint64_t lba __attribute__ (( unused )),
-			unsigned int count __attribute__ (( unused )),
+static void vdisk_vbr ( uint64_t lba __unused, unsigned int count __unused,
 			void *data ) {
 	struct vdisk_vbr *vbr = data;
 
@@ -99,8 +97,7 @@ static void vdisk_vbr ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_fsinfo ( uint64_t lba __attribute__ (( unused )),
-			   unsigned int count __attribute__ (( unused )),
+static void vdisk_fsinfo ( uint64_t lba __unused, unsigned int count __unused,
 			   void *data ) {
 	struct vdisk_fsinfo *fsinfo = data;
 
@@ -258,8 +255,7 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
-			 unsigned int count __attribute__ (( unused )),
+static void vdisk_root ( uint64_t lba __unused, unsigned int count __unused,
 			 void *data ) {
 	struct vdisk_directory *dir = data;
 	union vdisk_directory_entry *dirent
@@ -280,8 +276,7 @@ static void vdisk_root ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
-			 unsigned int count __attribute__ (( unused )),
+static void vdisk_boot ( uint64_t lba __unused, unsigned int count __unused,
 			 void *data ) {
 	struct vdisk_directory *dir = data;
 	union vdisk_directory_entry *dirent
@@ -303,8 +298,7 @@ static void vdisk_boot ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
-			    unsigned int count __attribute__ (( unused )),
+static void vdisk_sources ( uint64_t lba __unused, unsigned int count __unused,
 			    void *data ) {
 	struct vdisk_directory *dir = data;
 
@@ -319,8 +313,7 @@ static void vdisk_sources ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_fonts ( uint64_t lba __attribute__ (( unused )),
-			  unsigned int count __attribute__ (( unused )),
+static void vdisk_fonts ( uint64_t lba __unused, unsigned int count __unused,
 			  void *data ) {
 	struct vdisk_directory *dir = data;
 
@@ -335,9 +328,8 @@ static void vdisk_fonts ( uint64_t lba __attribute__ (( unused )),
  * @v count		Number of blocks to read
  * @v data		Data buffer
  */
-static void vdisk_resources ( uint64_t lba __attribute__ (( unused )),
-			      unsigned int count __attribute__ (( unused )),
-			      void *data ) {
+static void vdisk_resources ( uint64_t lba __unused,
+			      unsigned int count __unused, void *data ) {
 	struct vdisk_directory *dir = data;
 
 	/* Construct subdirectories */
