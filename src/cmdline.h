@@ -28,6 +28,7 @@
  */
 
 extern int cmdline_rawbcd;
+extern int cmdline_gui;
 extern void process_cmdline ( char *cmdline );
 
 #endif /* _CMDLINE_H */

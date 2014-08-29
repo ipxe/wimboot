@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "wimboot.h"
+#include "cmdline.h"
 #include "efi.h"
 #include "efi/Protocol/GraphicsOutput.h"
 #include "efipath.h"
@@ -69,7 +70,7 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 	 */
 	if ( ( memcmp ( protocol, &efi_graphics_output_protocol_guid,
 			sizeof ( *protocol ) ) == 0 ) &&
-	     ( count++ == 0 ) ) {
+	     ( count++ == 0 ) && ( ! cmdline_gui ) ) {
 		DBG ( "Forcing text mode output\n" );
 		return EFI_INVALID_PARAMETER;
 	}

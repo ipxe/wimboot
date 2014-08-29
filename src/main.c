@@ -37,6 +37,7 @@
 #include "cpio.h"
 #include "lznt1.h"
 #include "xca.h"
+#include "cmdline.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -45,7 +46,7 @@ extern char _start[];
 extern char _end[];
 
 /** Command line */
-const char *cmdline;
+char *cmdline;
 
 /** initrd */
 void *initrd;
@@ -87,7 +88,8 @@ static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
 		emulate_int13 ( params );
 
 	} else if ( ( params->vector.interrupt == 0x10 ) &&
-		    ( params->ax == 0x4f01 ) ) {
+		    ( params->ax == 0x4f01 ) &&
+		    ( ! cmdline_gui ) ) {
 
 		/* Mark all VESA video modes as unsupported */
 		attributes = REAL_PTR ( params->es, params->di );
@@ -363,6 +365,9 @@ int main ( void ) {
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
 		 "bootloader -- http://ipxe.org/wimboot\n\n" );
+
+	/* Process command line */
+	process_cmdline ( cmdline );
 
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )

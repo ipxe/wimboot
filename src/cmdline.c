@@ -34,6 +34,9 @@
 /** Use raw (unpatched) BCD files */
 int cmdline_rawbcd;
 
+/** Allow graphical output from bootmgr/bootmgfw */
+int cmdline_gui;
+
 /**
  * Process command line
  *
@@ -74,6 +77,8 @@ void process_cmdline ( char *cmdline ) {
 		/* Process this argument */
 		if ( strcmp ( key, "rawbcd" ) == 0 ) {
 			cmdline_rawbcd = 1;
+		} else if ( strcmp ( key, "gui" ) == 0 ) {
+			cmdline_gui = 1;
 		} else if ( key == cmdline ) {
 			/* Ignore unknown initial arguments, which may
 			 * be the program name.
