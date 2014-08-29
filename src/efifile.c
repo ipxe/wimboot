@@ -25,6 +25,9 @@
  */
 
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <wchar.h>
 #include "wimboot.h"
 #include "vdisk.h"
 #include "efi.h"
@@ -58,6 +61,30 @@ static void efi_read_file ( void *data, void *opaque, size_t offset,
 }
 
 /**
+ * Patch BCD file
+ *
+ * @v data		Data buffer
+ * @v opaque		Opaque token
+ * @v offset		Offset
+ * @v len		Length
+ */
+static void efi_patch_bcd ( void *data, void *opaque __unused,
+			    size_t offset __unused, size_t len ) {
+	static const wchar_t search[] = L".exe";
+	static const wchar_t replace[] = L".efi";
+	size_t i;
+
+	/* Patch any occurrences of ".exe" to ".efi".  In the common
+	 * simple cases, this allows the same BCD file to be used for
+	 * both BIOS and UEFI systems.
+	 */
+	for ( i = 0 ; i < ( len - sizeof ( search ) ) ; i++ ) {
+		if ( wcscasecmp ( ( data + i ), search ) == 0 )
+			memcpy ( ( data + i ), replace, sizeof ( replace ) );
+	}
+}
+
+/**
  * Extract files from EFI file system
  *
  * @v handle		Device handle
@@ -76,6 +103,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 	EFI_FILE_PROTOCOL *root;
 	EFI_FILE_PROTOCOL *file;
 	UINTN size;
+	CHAR16 *name;
 	EFI_STATUS efirc;
 	unsigned int idx = 0;
 
@@ -115,20 +143,27 @@ void efi_extract ( EFI_HANDLE handle ) {
 			die ( "Too many files\n" );
 
 		/* Open file */
-		if ( ( efirc = root->Open ( root, &file, info.file.FileName,
+		name = info.file.FileName;
+		if ( ( efirc = root->Open ( root, &file, name,
 					    EFI_FILE_MODE_READ, 0 ) ) != 0 ) {
 			die ( "Could not open \"%ls\": %#lx\n",
-			      info.file.FileName, ( ( unsigned long ) efirc ) );
+			      name, ( ( unsigned long ) efirc ) );
 		}
 
 		/* Add file */
 		vdisk_file = &vdisk_files[idx++];
 		snprintf ( vdisk_file->name, sizeof ( vdisk_file->name ),
-			   "%ls", info.file.FileName );
+			   "%ls", name );
 		vdisk_file->opaque = file;
 		vdisk_file->len = info.file.FileSize;
 		vdisk_file->read = efi_read_file;
 		DBG ( "Using %s via %p len %#zx\n", vdisk_file->name, 
 		      vdisk_file->opaque, vdisk_file->len );
+
+		/* Check for special-case files */
+		if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
+			vdisk_file->patch = efi_patch_bcd;
+			DBG ( "...modifying BCD for UEFI boot\n" );
+		}
 	}
 }
