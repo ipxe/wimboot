@@ -435,6 +435,8 @@ static void vdisk_file ( uint64_t lba, unsigned int count, void *data ) {
 		copy_len = len;
 	pad_len = ( len - copy_len );
 	file->read ( data, file->opaque, offset, copy_len );
+	if ( file->patch )
+		file->patch ( data, file->opaque, offset, copy_len );
 	memset ( ( data + copy_len ), 0, pad_len );
 }
 
