@@ -31,6 +31,7 @@
 #include "efi/Protocol/SimpleFileSystem.h"
 #include "efi/Guid/FileInfo.h"
 
+extern CHAR16 bootmgfw[];
 extern void efi_extract ( EFI_HANDLE handle );
 
 #endif /* _EFIFILE_H */

@@ -87,7 +87,7 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 	efi_install ( &vdisk, &vpartition );
 
 	/* Invoke boot manager */
-	efi_boot ( path.path, vpartition );
+	efi_boot ( path.path, bootmgfw, vpartition );
 
 	return 0;
 }

@@ -33,6 +33,26 @@
 #include "efi.h"
 #include "efifile.h"
 
+/** bootmgfw.efi file name */
+CHAR16 bootmgfw[ sizeof ( ( ( struct vdisk_file * ) NULL )->name ) ];
+
+/**
+ * Get architecture-specific boot filename
+ *
+ * @ret bootarch	Architecture-specific boot filename
+ */
+static const CHAR16 * efi_bootarch ( void ) {
+	static const CHAR16 bootarch_full[] = EFI_REMOVABLE_MEDIA_FILE_NAME;
+	const CHAR16 *tmp;
+	const CHAR16 *bootarch = bootarch_full;
+
+	for ( tmp = bootarch_full ; *tmp ; tmp++ ) {
+		if ( *tmp == L'\\' )
+			bootarch = ( tmp + 1 );
+	}
+	return bootarch;
+}
+
 /**
  * Read from EFI file
  *
@@ -161,9 +181,21 @@ void efi_extract ( EFI_HANDLE handle ) {
 		      vdisk_file->opaque, vdisk_file->len );
 
 		/* Check for special-case files */
-		if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
+		if ( ( wcscasecmp ( name, efi_bootarch() ) == 0 ) ||
+		     ( wcscasecmp ( name, L"bootmgfw.efi" ) == 0 ) ) {
+			memcpy ( bootmgfw, name,
+				 ( sizeof ( bootmgfw ) -
+				   sizeof ( wchar_t ) /* NUL */ ) );
+			DBG ( "...using %ls as bootmgfw.efi\n", bootmgfw );
+		} else if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
 			vdisk_file->patch = efi_patch_bcd;
 			DBG ( "...modifying BCD for UEFI boot\n" );
 		}
+	}
+
+	/* Check that we have a boot file */
+	if ( ! bootmgfw[0] ) {
+		die ( "FATAL: no %ls or bootmgfw.efi found\n",
+		      efi_bootarch() );
 	}
 }
