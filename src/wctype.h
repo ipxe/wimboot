@@ -1,5 +1,5 @@
-#ifndef _WCHAR_H
-#define _WCHAR_H
+#ifndef _WCTYPE_H
+#define _WCTYPE_H
 
 /*
  * Copyright (C) 2012 Michael Brown <mbrown@fensystems.co.uk>.
@@ -23,31 +23,31 @@
 /**
  * @file
  *
- * Wide characters
+ * Wide character types
+ *
+ * We don't actually care about wide characters.  Internationalisation
+ * is a user interface concern, and has absolutely no place in the
+ * boot process.  However, UEFI uses wide characters and so we have to
+ * at least be able to handle the ASCII subset of UCS-2.
  *
  */
 
-#include <stdint.h>
+#include <ctype.h>
 
-typedef void mbstate_t;
-
-/**
- * Convert wide character to multibyte sequence
- *
- * @v buf		Buffer
- * @v wc		Wide character
- * @v ps		Shift state
- * @ret len		Number of characters written
- *
- * This is a stub implementation, sufficient to handle basic ASCII
- * characters.
- */
-static inline size_t wcrtomb ( char *buf, wchar_t wc,
-			       mbstate_t *ps __attribute__ (( unused )) ) {
-	*buf = wc;
-	return 1;
+static inline int iswlower ( wint_t c ) {
+	return islower ( c );
 }
 
-extern int wcscasecmp ( const wchar_t *str1, const wchar_t *str2 );
+static inline int iswupper ( wint_t c ) {
+	return isupper ( c );
+}
 
-#endif /* _WCHAR_H */
+static inline int towupper ( wint_t c ) {
+	return toupper ( c );
+}
+
+static inline int iswspace ( wint_t c ) {
+	return isspace ( c );
+}
+
+#endif /* _WCTYPE_H */

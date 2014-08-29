@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "ctype.h"
+#include "wctype.h"
 
 /**
  * Copy memory area
@@ -140,6 +141,25 @@ int strcasecmp ( const char *str1, const char *str2 ) {
 		c1 = toupper ( *(str1++) );
 		c2 = toupper ( *(str2++) );
 	} while ( ( c1 != '\0' ) && ( c1 == c2 ) );
+
+	return ( c1 - c2 );
+}
+
+/**
+ * Compare two wide-character strings, case-insensitively
+ *
+ * @v str1		First string
+ * @v str2		Second string
+ * @ret diff		Difference
+ */
+int wcscasecmp ( const wchar_t *str1, const wchar_t *str2 ) {
+	int c1;
+	int c2;
+
+	do {
+		c1 = towupper ( *(str1++) );
+		c2 = towupper ( *(str2++) );
+	} while ( ( c1 != L'\0' ) && ( c1 == c2 ) );
 
 	return ( c1 - c2 );
 }
