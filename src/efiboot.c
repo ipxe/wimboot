@@ -24,11 +24,58 @@
  *
  */
 
+#include <stdio.h>
 #include <string.h>
 #include "wimboot.h"
 #include "efi.h"
+#include "efi/Protocol/GraphicsOutput.h"
 #include "efipath.h"
 #include "efiboot.h"
+
+/** Original OpenProtocol() method */
+static EFI_OPEN_PROTOCOL orig_open_protocol;
+
+/**
+ * Intercept OpenProtocol()
+ *
+ * @v handle		EFI handle
+ * @v protocol		Protocol GUID
+ * @v interface		Opened interface
+ * @v agent_handle	Agent handle
+ * @v controller_handle	Controller handle
+ * @v attributes	Attributes
+ * @ret efirc		EFI status code
+ */
+static EFI_STATUS EFIAPI
+efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
+			    VOID **interface, EFI_HANDLE agent_handle,
+			    EFI_HANDLE controller_handle, UINT32 attributes ) {
+	static unsigned int count;
+	EFI_STATUS efirc;
+
+	/* Open the protocol */
+	if ( ( efirc = orig_open_protocol ( handle, protocol, interface,
+					    agent_handle, controller_handle,
+					    attributes ) ) != 0 ) {
+		return efirc;
+	}
+
+	/* Block first attempt by bootmgfw.efi to open
+	 * EFI_GRAPHICS_OUTPUT_PROTOCOL.  This forces error messages
+	 * to be displayed in text mode (thereby avoiding the totally
+	 * blank error screen if the fonts are missing).  We must
+	 * allow subsequent attempts to succeed, otherwise the OS will
+	 * fail to boot.
+	 */
+	if ( ( memcmp ( protocol, &efi_graphics_output_protocol_guid,
+			sizeof ( *protocol ) ) == 0 ) &&
+	     ( count++ == 0 ) ) {
+		DBG ( "Forcing text mode output\n" );
+		return EFI_INVALID_PARAMETER;
+	}
+
+	return 0;
+}
 
 /**
  * Find end of file name
@@ -106,6 +153,12 @@ EFI_STATUS efi_boot ( EFI_DEVICE_PATH_PROTOCOL *parent, const CHAR16 *name,
 
 	/* Overwrite the loaded image's device handle */
 	loaded.image->DeviceHandle = device;
+
+	/* Intercept calls to OpenProtocol() */
+	orig_open_protocol =
+		loaded.image->SystemTable->BootServices->OpenProtocol;
+	loaded.image->SystemTable->BootServices->OpenProtocol =
+		efi_open_protocol_wrapper;
 
 	/* Start image */
 	if ( ( efirc = bs->StartImage ( handle, NULL, NULL ) ) != 0 ) {

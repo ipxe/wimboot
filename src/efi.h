@@ -45,6 +45,7 @@ extern EFI_HANDLE efi_image_handle;
 
 extern EFI_GUID efi_block_io_protocol_guid;
 extern EFI_GUID efi_device_path_protocol_guid;
+extern EFI_GUID efi_graphics_output_protocol_guid;
 extern EFI_GUID efi_loaded_image_protocol_guid;
 extern EFI_GUID efi_simple_file_system_protocol_guid;
 

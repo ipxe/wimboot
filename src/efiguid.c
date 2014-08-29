@@ -28,6 +28,7 @@
 #include "efi.h"
 #include "efi/Protocol/BlockIo.h"
 #include "efi/Protocol/DevicePath.h"
+#include "efi/Protocol/GraphicsOutput.h"
 #include "efi/Protocol/LoadedImage.h"
 #include "efi/Protocol/SimpleFileSystem.h"
 
@@ -38,6 +39,10 @@ EFI_GUID efi_block_io_protocol_guid
 /** Device path protocol GUID */
 EFI_GUID efi_device_path_protocol_guid
 	= EFI_DEVICE_PATH_PROTOCOL_GUID;
+
+/** Graphics output protocol GUID */
+EFI_GUID efi_graphics_output_protocol_guid
+	= EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 
 /** Loaded image protocol GUID */
 EFI_GUID efi_loaded_image_protocol_guid
