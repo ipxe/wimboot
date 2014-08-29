@@ -30,6 +30,7 @@
 #include <wchar.h>
 #include "wimboot.h"
 #include "vdisk.h"
+#include "cmdline.h"
 #include "efi.h"
 #include "efifile.h"
 
@@ -188,8 +189,10 @@ void efi_extract ( EFI_HANDLE handle ) {
 				   sizeof ( wchar_t ) /* NUL */ ) );
 			DBG ( "...using %ls as bootmgfw.efi\n", bootmgfw );
 		} else if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
-			vdisk_file->patch = efi_patch_bcd;
-			DBG ( "...modifying BCD for UEFI boot\n" );
+			if ( ! cmdline_rawbcd ) {
+				vdisk_file->patch = efi_patch_bcd;
+				DBG ( "...modifying BCD for UEFI boot\n" );
+			}
 		}
 	}
 

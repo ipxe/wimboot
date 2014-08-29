@@ -26,10 +26,28 @@
 
 #include <stdio.h>
 #include "wimboot.h"
+#include "cmdline.h"
 #include "efi.h"
 #include "efifile.h"
 #include "efiblock.h"
 #include "efiboot.h"
+
+/**
+ * Process command line
+ *
+ * @v loaded		Loaded image protocol
+ */
+static void efi_cmdline ( EFI_LOADED_IMAGE_PROTOCOL *loaded ) {
+	size_t cmdline_len = ( loaded->LoadOptionsSize / sizeof ( wchar_t ) );
+	char cmdline[ cmdline_len + 1 /* NUL */ ];
+	const wchar_t *wcmdline = loaded->LoadOptions;
+
+	/* Convert command line to ASCII */
+	snprintf ( cmdline, sizeof ( cmdline ), "%ls", wcmdline );
+
+	/* Process command line */
+	process_cmdline ( cmdline );
+}
 
 /**
  * EFI entry point
@@ -70,6 +88,9 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 		die ( "Could not open loaded image protocol: %#lx\n",
 		      ( ( unsigned long ) efirc ) );
 	}
+
+	/* Process command line */
+	efi_cmdline ( loaded.image );
 
 	/* Get device path protocol */
 	if ( ( efirc = bs->OpenProtocol ( loaded.image->DeviceHandle,
