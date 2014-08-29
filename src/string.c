@@ -165,6 +165,34 @@ int wcscasecmp ( const wchar_t *str1, const wchar_t *str2 ) {
 }
 
 /**
+ * Get length of string
+ *
+ * @v str		String
+ * @ret len		Length
+ */
+size_t strlen ( const char *str ) {
+	size_t len = 0;
+
+	while ( *(str++) )
+		len++;
+	return len;
+}
+
+/**
+ * Get length of wide-character string
+ *
+ * @v str		String
+ * @ret len		Length (in characters)
+ */
+size_t wcslen ( const wchar_t *str ) {
+	size_t len = 0;
+
+	while ( *(str++) )
+		len++;
+	return len;
+}
+
+/**
  * Check to see if character is a space
  *
  * @v c                 Character
