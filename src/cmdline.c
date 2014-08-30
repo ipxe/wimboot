@@ -25,6 +25,7 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -37,6 +38,9 @@ int cmdline_rawbcd;
 /** Allow graphical output from bootmgr/bootmgfw */
 int cmdline_gui;
 
+/** WIM boot index */
+unsigned int cmdline_index;
+
 /**
  * Process command line
  *
@@ -46,6 +50,7 @@ void process_cmdline ( char *cmdline ) {
 	char *tmp = cmdline;
 	char *key;
 	char *value;
+	char *endp;
 
 	/* Do nothing if we have no command line */
 	if ( ( cmdline == NULL ) || ( cmdline[0] == '\0' ) )
@@ -79,6 +84,12 @@ void process_cmdline ( char *cmdline ) {
 			cmdline_rawbcd = 1;
 		} else if ( strcmp ( key, "gui" ) == 0 ) {
 			cmdline_gui = 1;
+		} else if ( strcmp ( key, "index" ) == 0 ) {
+			if ( ( ! value ) || ( ! value[0] ) )
+				die ( "Argument \"index\" needs a value\n" );
+			cmdline_index = strtoul ( value, &endp, 0 );
+			if ( *endp )
+				die ( "Invalid index \"%s\"\n", value );
 		} else if ( key == cmdline ) {
 			/* Ignore unknown initial arguments, which may
 			 * be the program name.

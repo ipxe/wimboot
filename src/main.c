@@ -38,6 +38,7 @@
 #include "lznt1.h"
 #include "xca.h"
 #include "cmdline.h"
+#include "wimpatch.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -303,14 +304,15 @@ static int extract_bootmgr ( const void *data, size_t len ) {
 /**
  * Read from file
  *
+ * @v file		Virtual file
  * @v data		Data buffer
- * @v opaque		Opaque token
  * @v offset		Offset
  * @v len		Length
  */
-static void read_file ( void *data, void *opaque, size_t offset, size_t len ) {
+static void read_file ( struct vdisk_file *file, void *data, size_t offset,
+			size_t len ) {
 
-	memcpy ( data, ( opaque + offset ), len );
+	memcpy ( data, ( file->opaque + offset ), len );
 }
 
 /**
@@ -323,6 +325,7 @@ static void read_file ( void *data, void *opaque, size_t offset, size_t len ) {
  */
 static int add_file ( const char *name, void *data, size_t len ) {
 	static unsigned int idx = 0;
+	struct vdisk_file *vdisk_file;
 	int rc;
 
 	/* Sanity check */
@@ -333,23 +336,25 @@ static int add_file ( const char *name, void *data, size_t len ) {
 
 	/* Store file */
 	DBG ( "Loading %s at %p+%#zx\n", name, data, len );
-	snprintf ( vdisk_files[idx].name, sizeof ( vdisk_files[idx].name ),
-		   "%s", name );
-	vdisk_files[idx].opaque = data;
-	vdisk_files[idx].len = len;
-	vdisk_files[idx].read = read_file;
-	idx++;
+	vdisk_file = &vdisk_files[idx++];
+	snprintf ( vdisk_file->name, sizeof ( vdisk_file->name ), "%s", name );
+	vdisk_file->opaque = data;
+	vdisk_file->len = len;
+	vdisk_file->read = read_file;
 
-	/* Check for bootmgr.exe */
+	/* Check for special-case files */
 	if ( strcasecmp ( name, "bootmgr.exe" ) == 0 ) {
+		DBG ( "...found bootmgr.exe\n" );
 		bootmgr = data;
 		bootmgr_len = len;
-	}
-
-	/* Check for bootmgr */
-	if ( strcasecmp ( name, "bootmgr" ) == 0 ) {
+	} else if ( strcasecmp ( name, "bootmgr" ) == 0 ) {
+		DBG ( "...found bootmgr\n" );
 		if ( ( rc = extract_bootmgr ( data, len ) ) != 0 )
 			return rc;
+	} else if ( strcasecmp ( ( name + strlen ( name ) - 4 ),
+				 ".wim" ) == 0 ) {
+		DBG ( "...found WIM file %s\n", name );
+		vdisk_file->patch = patch_wim;
 	}
 
 	return 0;

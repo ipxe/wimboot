@@ -577,20 +577,21 @@ struct vdisk_file {
 	size_t len;
 	/** Read data
 	 *
+	 * @v file		Virtual file
 	 * @v data		Data buffer
-	 * @v opaque		Opaque token
 	 * @v offset		Starting offset
 	 * @v len		Length
 	 */
-	void ( * read ) ( void *data, void *opaque, size_t offset, size_t len );
+	void ( * read ) ( struct vdisk_file *file, void *data, size_t offset,
+			  size_t len );
 	/** Patch data (optional)
 	 *
+	 * @v file		Virtual file
 	 * @v data		Data buffer
-	 * @v opaque		Opaque token
 	 * @v offset		Starting offset
 	 * @v len		Length
 	 */
-	void ( * patch ) ( void *data, void *opaque, size_t offset,
+	void ( * patch ) ( struct vdisk_file *file, void *data, size_t offset,
 			   size_t len );
 };
 

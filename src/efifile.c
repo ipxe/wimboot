@@ -31,6 +31,7 @@
 #include "wimboot.h"
 #include "vdisk.h"
 #include "cmdline.h"
+#include "wimpatch.h"
 #include "efi.h"
 #include "efifile.h"
 
@@ -57,14 +58,14 @@ static const CHAR16 * efi_bootarch ( void ) {
 /**
  * Read from EFI file
  *
+ * @v vfile		Virtual file
  * @v data		Data buffer
- * @v opaque		Opaque token
  * @v offset		Offset
  * @v len		Length
  */
-static void efi_read_file ( void *data, void *opaque, size_t offset,
-			    size_t len ) {
-	EFI_FILE_PROTOCOL *file = opaque;
+static void efi_read_file ( struct vdisk_file *vfile, void *data,
+			    size_t offset, size_t len ) {
+	EFI_FILE_PROTOCOL *file = vfile->opaque;
 	UINTN size = len;
 	EFI_STATUS efirc;
 
@@ -84,24 +85,31 @@ static void efi_read_file ( void *data, void *opaque, size_t offset,
 /**
  * Patch BCD file
  *
+ * @v vfile		Virtual file
  * @v data		Data buffer
- * @v opaque		Opaque token
  * @v offset		Offset
  * @v len		Length
  */
-static void efi_patch_bcd ( void *data, void *opaque __unused,
-			    size_t offset __unused, size_t len ) {
+static void efi_patch_bcd ( struct vdisk_file *vfile __unused, void *data,
+			    size_t offset, size_t len ) {
 	static const wchar_t search[] = L".exe";
 	static const wchar_t replace[] = L".efi";
 	size_t i;
+
+	/* Do nothing if BCD patching is disabled */
+	if ( cmdline_rawbcd )
+		return;
 
 	/* Patch any occurrences of ".exe" to ".efi".  In the common
 	 * simple cases, this allows the same BCD file to be used for
 	 * both BIOS and UEFI systems.
 	 */
 	for ( i = 0 ; i < ( len - sizeof ( search ) ) ; i++ ) {
-		if ( wcscasecmp ( ( data + i ), search ) == 0 )
+		if ( wcscasecmp ( ( data + i ), search ) == 0 ) {
 			memcpy ( ( data + i ), replace, sizeof ( replace ) );
+			DBG ( "...patched BCD at %#zx: \"%ls\" to \"%ls\"\n",
+			      ( offset + i ), search, replace );
+		}
 	}
 }
 
@@ -120,7 +128,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		EFI_FILE_INFO file;
 		CHAR16 name[ sizeof ( vdisk_files[0].name ) ];
 	} __attribute__ (( packed )) info;
-	struct vdisk_file *vdisk_file;
+	struct vdisk_file *vfile;
 	EFI_FILE_PROTOCOL *root;
 	EFI_FILE_PROTOCOL *file;
 	UINTN size;
@@ -172,27 +180,28 @@ void efi_extract ( EFI_HANDLE handle ) {
 		}
 
 		/* Add file */
-		vdisk_file = &vdisk_files[idx++];
-		snprintf ( vdisk_file->name, sizeof ( vdisk_file->name ),
-			   "%ls", name );
-		vdisk_file->opaque = file;
-		vdisk_file->len = info.file.FileSize;
-		vdisk_file->read = efi_read_file;
-		DBG ( "Using %s via %p len %#zx\n", vdisk_file->name, 
-		      vdisk_file->opaque, vdisk_file->len );
+		vfile = &vdisk_files[idx++];
+		snprintf ( vfile->name, sizeof ( vfile->name ), "%ls", name );
+		vfile->opaque = file;
+		vfile->len = info.file.FileSize;
+		vfile->read = efi_read_file;
+		DBG ( "Using %s via %p len %#zx\n", vfile->name, 
+		      vfile->opaque, vfile->len );
 
 		/* Check for special-case files */
 		if ( ( wcscasecmp ( name, efi_bootarch() ) == 0 ) ||
 		     ( wcscasecmp ( name, L"bootmgfw.efi" ) == 0 ) ) {
+			DBG ( "...found bootmgfw.efi file %ls\n", bootmgfw );
 			memcpy ( bootmgfw, name,
 				 ( sizeof ( bootmgfw ) -
 				   sizeof ( wchar_t ) /* NUL */ ) );
-			DBG ( "...using %ls as bootmgfw.efi\n", bootmgfw );
 		} else if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
-			if ( ! cmdline_rawbcd ) {
-				vdisk_file->patch = efi_patch_bcd;
-				DBG ( "...modifying BCD for UEFI boot\n" );
-			}
+			DBG ( "...found BCD\n" );
+			vfile->patch = efi_patch_bcd;
+		} else if ( wcscasecmp ( ( name + ( wcslen ( name ) - 4 ) ),
+					 L".wim" ) == 0 ) {
+			DBG ( "...found WIM file %ls\n", name );
+			vfile->patch = patch_wim;
 		}
 	}
 

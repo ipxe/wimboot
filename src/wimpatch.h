@@ -1,5 +1,5 @@
-#ifndef _CMDLINE_H
-#define _CMDLINE_H
+#ifndef _WIMPATCH_H
+#define _WIMPATCH_H
 
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
@@ -23,13 +23,15 @@
 /**
  * @file
  *
- * Command line
+ * WIM dynamic patching
  *
  */
 
-extern int cmdline_rawbcd;
-extern int cmdline_gui;
-extern unsigned int cmdline_index;
-extern void process_cmdline ( char *cmdline );
+#include <stdint.h>
 
-#endif /* _CMDLINE_H */
+struct vdisk_file;
+
+extern void patch_wim ( struct vdisk_file *file, void *data, size_t offset,
+			size_t len );
+
+#endif /* _WIMPATCH_H */

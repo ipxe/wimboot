@@ -143,7 +143,7 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 
 	/* Add end-of-file markers, if applicable */
 	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
-		if ( vdisk_files[i].opaque ) {
+		if ( vdisk_files[i].read ) {
 			file_end_marker = ( VDISK_FILE_CLUSTER ( i ) +
 					    ( ( vdisk_files[i].len - 1 ) /
 					      VDISK_CLUSTER_SIZE ) );
@@ -402,7 +402,7 @@ static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
 		/* Identify file */
 		idx = VDISK_FILE_DIRENT_IDX ( lba );
 		file = &vdisk_files[idx];
-		if ( ! file->opaque )
+		if ( ! file->read )
 			continue;
 
 		/* Populate directory entry */
@@ -434,9 +434,9 @@ static void vdisk_file ( uint64_t lba, unsigned int count, void *data ) {
 	if ( copy_len > len )
 		copy_len = len;
 	pad_len = ( len - copy_len );
-	file->read ( data, file->opaque, offset, copy_len );
+	file->read ( file, data, offset, copy_len );
 	if ( file->patch )
-		file->patch ( data, file->opaque, offset, copy_len );
+		file->patch ( file, data, offset, copy_len );
 	memset ( ( data + copy_len ), 0, pad_len );
 }
 
