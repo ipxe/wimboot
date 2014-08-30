@@ -26,6 +26,8 @@
  *
  */
 
+#define PACKAGE "wimboot"
+#define PACKAGE_VERSION VERSION
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
