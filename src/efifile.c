@@ -191,7 +191,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		/* Check for special-case files */
 		if ( ( wcscasecmp ( name, efi_bootarch() ) == 0 ) ||
 		     ( wcscasecmp ( name, L"bootmgfw.efi" ) == 0 ) ) {
-			DBG ( "...found bootmgfw.efi file %ls\n", bootmgfw );
+			DBG ( "...found bootmgfw.efi file %ls\n", name );
 			memcpy ( bootmgfw, name,
 				 ( sizeof ( bootmgfw ) -
 				   sizeof ( wchar_t ) /* NUL */ ) );
