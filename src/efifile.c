@@ -126,13 +126,14 @@ void efi_extract ( EFI_HANDLE handle ) {
 	} fs;
 	struct {
 		EFI_FILE_INFO file;
-		CHAR16 name[ sizeof ( vdisk_files[0].name ) ];
+		CHAR16 name[ VDISK_NAME_LEN + 1 /* WNUL */ ];
 	} __attribute__ (( packed )) info;
+	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
 	struct vdisk_file *vfile;
 	EFI_FILE_PROTOCOL *root;
 	EFI_FILE_PROTOCOL *file;
 	UINTN size;
-	CHAR16 *name;
+	CHAR16 *wname;
 	EFI_STATUS efirc;
 	unsigned int idx = 0;
 
@@ -172,35 +173,31 @@ void efi_extract ( EFI_HANDLE handle ) {
 			die ( "Too many files\n" );
 
 		/* Open file */
-		name = info.file.FileName;
-		if ( ( efirc = root->Open ( root, &file, name,
+		wname = info.file.FileName;
+		if ( ( efirc = root->Open ( root, &file, wname,
 					    EFI_FILE_MODE_READ, 0 ) ) != 0 ) {
 			die ( "Could not open \"%ls\": %#lx\n",
-			      name, ( ( unsigned long ) efirc ) );
+			      wname, ( ( unsigned long ) efirc ) );
 		}
 
 		/* Add file */
-		vfile = &vdisk_files[idx++];
-		snprintf ( vfile->name, sizeof ( vfile->name ), "%ls", name );
-		vfile->opaque = file;
-		vfile->len = info.file.FileSize;
-		vfile->read = efi_read_file;
-		DBG ( "Using %s via %p len %#zx\n", vfile->name, 
-		      vfile->opaque, vfile->len );
+		snprintf ( name, sizeof ( name ), "%ls", wname );
+		vfile = vdisk_add_file ( name, file, info.file.FileSize,
+					 efi_read_file );
 
 		/* Check for special-case files */
-		if ( ( wcscasecmp ( name, efi_bootarch() ) == 0 ) ||
-		     ( wcscasecmp ( name, L"bootmgfw.efi" ) == 0 ) ) {
-			DBG ( "...found bootmgfw.efi file %ls\n", name );
-			memcpy ( bootmgfw, name,
+		if ( ( wcscasecmp ( wname, efi_bootarch() ) == 0 ) ||
+		     ( wcscasecmp ( wname, L"bootmgfw.efi" ) == 0 ) ) {
+			DBG ( "...found bootmgfw.efi file %ls\n", wname );
+			memcpy ( bootmgfw, wname,
 				 ( sizeof ( bootmgfw ) -
 				   sizeof ( wchar_t ) /* NUL */ ) );
-		} else if ( wcscasecmp ( name, L"BCD" ) == 0 ) {
+		} else if ( wcscasecmp ( wname, L"BCD" ) == 0 ) {
 			DBG ( "...found BCD\n" );
 			vfile->patch = efi_patch_bcd;
-		} else if ( wcscasecmp ( ( name + ( wcslen ( name ) - 4 ) ),
+		} else if ( wcscasecmp ( ( wname + ( wcslen ( wname ) - 4 ) ),
 					 L".wim" ) == 0 ) {
-			DBG ( "...found WIM file %ls\n", name );
+			DBG ( "...found WIM file %ls\n", wname );
 			vfile->patch = patch_wim;
 		}
 	}

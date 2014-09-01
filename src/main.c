@@ -324,23 +324,11 @@ static void read_file ( struct vdisk_file *file, void *data, size_t offset,
  * @ret rc		Return status code
  */
 static int add_file ( const char *name, void *data, size_t len ) {
-	static unsigned int idx = 0;
-	struct vdisk_file *vdisk_file;
+	struct vdisk_file *file;
 	int rc;
 
-	/* Sanity check */
-	if ( idx >= VDISK_MAX_FILES ) {
-		DBG ( "Too many files\n" );
-		return -1;
-	}
-
 	/* Store file */
-	DBG ( "Loading %s at %p+%#zx\n", name, data, len );
-	vdisk_file = &vdisk_files[idx++];
-	snprintf ( vdisk_file->name, sizeof ( vdisk_file->name ), "%s", name );
-	vdisk_file->opaque = data;
-	vdisk_file->len = len;
-	vdisk_file->read = read_file;
+	file = vdisk_add_file ( name, data, len, read_file );
 
 	/* Check for special-case files */
 	if ( strcasecmp ( name, "bootmgr.exe" ) == 0 ) {
@@ -354,7 +342,7 @@ static int add_file ( const char *name, void *data, size_t len ) {
 	} else if ( strcasecmp ( ( name + strlen ( name ) - 4 ),
 				 ".wim" ) == 0 ) {
 		DBG ( "...found WIM file %s\n", name );
-		vdisk_file->patch = patch_wim;
+		file->patch = patch_wim;
 	}
 
 	return 0;

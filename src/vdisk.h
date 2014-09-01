@@ -567,10 +567,13 @@ struct vdisk_directory {
  *****************************************************************************
  */
 
+/** Maximum virtual filename length (excluding NUL) */
+#define VDISK_NAME_LEN 31
+
 /** A virtual file */
 struct vdisk_file {
-	/** Filename (must be NUL-terminated) */
-	char name[32];
+	/** Filename */
+	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
 	/** Opaque token */
 	void *opaque;
 	/** Length */
@@ -595,7 +598,10 @@ struct vdisk_file {
 			   size_t len );
 };
 
-extern struct vdisk_file vdisk_files[VDISK_MAX_FILES];
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
+extern struct vdisk_file *
+vdisk_add_file ( const char *name, void *opaque, size_t len,
+		 void ( * read ) ( struct vdisk_file *file, void *data,
+				   size_t offset, size_t len ) );
 
 #endif /* _VDISK_H */

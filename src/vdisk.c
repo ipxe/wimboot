@@ -32,7 +32,7 @@
 #include "vdisk.h"
 
 /** Virtual files */
-struct vdisk_file vdisk_files[VDISK_MAX_FILES];
+static struct vdisk_file vdisk_files[VDISK_MAX_FILES];
 
 /**
  * Read from virtual Master Boot Record
@@ -596,4 +596,37 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 	} while ( frag_start != end );
 
 	DBG2 ( "\n" );
+}
+
+/**
+ * Add file to virtual disk
+ *
+ * @v name		Name
+ * @v opaque		Opaque token
+ * @v len		Length
+ * @v read		Read data method
+ * @ret file		Virtual file
+ */
+struct vdisk_file * vdisk_add_file ( const char *name, void *opaque, size_t len,
+				     void ( * read ) ( struct vdisk_file *file,
+						       void *data,
+						       size_t offset,
+						       size_t len ) ) {
+	static unsigned int index = 0;
+	struct vdisk_file *file;
+
+	/* Sanity check */
+	if ( index >= VDISK_MAX_FILES )
+		die ( "Too many files\n" );
+
+	/* Store file */
+	file = &vdisk_files[index++];
+	snprintf ( file->name, sizeof ( file->name ), "%s", name );
+	file->opaque = opaque;
+	file->len = len;
+	file->read = read;
+	DBG ( "Using %s via %p len %#zx\n", file->name, file->opaque,
+	      file->len );
+
+	return file;
 }
