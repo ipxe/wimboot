@@ -34,83 +34,33 @@
 
 /** A WIM patch */
 struct wim_patch {
-	/** Lookup table */
-	struct wim_resource_header lookup;
 	/** Boot metadata */
 	struct wim_resource_header boot;
 };
 
 /**
- * Get WIM image metadata
- *
- * @v file		Virtual file
- * @v lookup		Lookup table
- * @v index		Image index
- * @v meta		Metadata to fill in
- */
-static void get_metadata ( struct vdisk_file *file,
-			   struct wim_resource_header *lookup,
-			   unsigned int index,
-			   struct wim_resource_header *meta ) {
-	struct wim_lookup_entry entry;
-	size_t offset = lookup->offset;
-	size_t remaining = ( lookup->zlen__flags & WIM_RESHDR_ZLEN_MASK );
-	unsigned int found = 0;
-
-	/* Fail if lookup table itself is compressed */
-	if ( lookup->zlen__flags & ( WIM_RESHDR_COMPRESSED |
-				     WIM_RESHDR_PACKED_STREAMS ) ) {
-		die ( "Cannot handle compressed WIM lookup table in %s\n",
-		      file->name );
-	}
-
-	/* Look for metadata entry */
-	DBG ( "...lookup table at [%#zx,%#zx)\n", offset,
-	      ( offset + remaining ) );
-	while ( remaining >= sizeof ( entry ) ) {
-
-		/* Read entry */
-		file->read ( file, &entry, offset, sizeof ( entry ) );
-
-		/* Look for our target entry */
-		if ( entry.resource.zlen__flags & WIM_RESHDR_METADATA ) {
-			found++;
-			DBG ( "...found image %d metadata at %#zx\n",
-			      found, offset );
-			if ( found == index ) {
-				memcpy ( meta, &entry.resource,
-					 sizeof ( *meta ) );
-				return;
-			}
-		}
-
-		/* Move to next entry */
-		offset += sizeof ( entry );
-		remaining -= sizeof ( entry );
-	}
-
-	/* Fail if index was not found */
-	die ( "Cannot find WIM image index %d in %s\n", index, file->name );
-}
-
-/**
  * Generate WIM patch
  *
  * @v file		Virtual file
- * @v boot_index	New boot index, or zero
+ * @v boot_index	New boot index (or zero)
  * @v patch		Patch to fill in
+ * @ret rc		Return status code
  */
-static void generate_patch ( struct vdisk_file *file, unsigned int boot_index,
-			     struct wim_patch *patch ) {
-	struct wim_header wimhdr;
+static int generate_patch ( struct vdisk_file *file, unsigned int boot_index,
+			    struct wim_patch *patch ) {
+	struct wim_header header;
+	int rc;
 
-	/* Read lookup table */
-	file->read ( file, &wimhdr, 0, sizeof ( wimhdr ) );
-	memcpy ( &patch->lookup, &wimhdr.lookup, sizeof ( patch->lookup ) );
+	/* Read WIM header */
+	if ( ( rc = wim_header ( file, &header ) ) != 0 )
+		return rc;
 
-	/* Get boot image metadata, if applicable */
-	if ( boot_index )
-		get_metadata ( file, &patch->lookup, boot_index, &patch->boot );
+	/* Get selected boot image metadata */
+	if ( ( rc = wim_metadata ( file, &header, boot_index,
+				   &patch->boot ) ) != 0 )
+		return rc;
+
+	return 0;
 }
 
 /**
@@ -127,6 +77,7 @@ void patch_wim ( struct vdisk_file *file, void *data, size_t offset,
 	static struct wim_patch cached_patch;
 	struct wim_patch *patch;
 	struct wim_header *wimhdr;
+	int rc;
 
 	/* Do nothing unless boot index patching is enabled */
 	if ( ! cmdline_index )
@@ -135,7 +86,10 @@ void patch_wim ( struct vdisk_file *file, void *data, size_t offset,
 	/* Update cached patch if required */
 	if ( file != cached_file ) {
 		DBG ( "...patching WIM %s\n", file->name );
-		generate_patch ( file, cmdline_index, &cached_patch );
+		if ( ( rc = generate_patch ( file, cmdline_index,
+					     &cached_patch ) ) != 0 ) {
+			die ( "Could not patch WIM\n" );
+		}
 		cached_file = file;
 	}
 	patch = &cached_patch;
