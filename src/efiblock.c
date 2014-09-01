@@ -278,3 +278,30 @@ void efi_install ( EFI_HANDLE *vdisk, EFI_HANDLE *vpartition ) {
 		      ( ( unsigned long ) efirc ) );
 	}
 }
+
+/** Boot image path */
+static struct {
+	VENDOR_DEVICE_PATH vendor;
+	ATAPI_DEVICE_PATH ata;
+	HARDDRIVE_DEVICE_PATH hd;
+	struct {
+		EFI_DEVICE_PATH header;
+		CHAR16 name[ sizeof ( EFI_REMOVABLE_MEDIA_FILE_NAME ) /
+			     sizeof ( CHAR16 ) ];
+	} __attribute__ (( packed )) file;
+	EFI_DEVICE_PATH_PROTOCOL end;
+} __attribute__ (( packed )) efi_bootmgfw_path = {
+	.vendor = EFIBLOCK_DEVPATH_VENDOR_INIT ( efi_bootmgfw_path.vendor ),
+	.ata = EFIBLOCK_DEVPATH_ATA_INIT ( efi_bootmgfw_path.ata ),
+	.hd = EFIBLOCK_DEVPATH_HD_INIT ( efi_bootmgfw_path.hd ),
+	.file = {
+		.header = EFI_DEVPATH_INIT ( efi_bootmgfw_path.file,
+					     MEDIA_DEVICE_PATH,
+					     MEDIA_FILEPATH_DP ),
+		.name = EFI_REMOVABLE_MEDIA_FILE_NAME,
+	},
+	.end = EFI_DEVPATH_END_INIT ( efi_bootmgfw_path.end ),
+};
+
+/** Boot image path */
+EFI_DEVICE_PATH_PROTOCOL *bootmgfw_path = &efi_bootmgfw_path.vendor.Header;

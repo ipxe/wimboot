@@ -32,11 +32,15 @@
 #include "vdisk.h"
 #include "cmdline.h"
 #include "wimpatch.h"
+#include "wimfile.h"
 #include "efi.h"
 #include "efifile.h"
 
-/** bootmgfw.efi file name */
-CHAR16 bootmgfw[ sizeof ( ( ( struct vdisk_file * ) NULL )->name ) ];
+/** bootmgfw.efi path within WIM */
+static const wchar_t bootmgfw_path[] = L"\\Windows\\Boot\\EFI\\bootmgfw.efi";
+
+/** bootmgfw.efi file */
+struct vdisk_file *bootmgfw;
 
 /**
  * Get architecture-specific boot filename
@@ -189,9 +193,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		if ( ( wcscasecmp ( wname, efi_bootarch() ) == 0 ) ||
 		     ( wcscasecmp ( wname, L"bootmgfw.efi" ) == 0 ) ) {
 			DBG ( "...found bootmgfw.efi file %ls\n", wname );
-			memcpy ( bootmgfw, wname,
-				 ( sizeof ( bootmgfw ) -
-				   sizeof ( wchar_t ) /* NUL */ ) );
+			bootmgfw = vfile;
 		} else if ( wcscasecmp ( wname, L"BCD" ) == 0 ) {
 			DBG ( "...found BCD\n" );
 			vfile->patch = efi_patch_bcd;
@@ -199,11 +201,17 @@ void efi_extract ( EFI_HANDLE handle ) {
 					 L".wim" ) == 0 ) {
 			DBG ( "...found WIM file %ls\n", wname );
 			vfile->patch = patch_wim;
+			if ( ( ! bootmgfw ) &&
+			     ( bootmgfw = wim_add_file ( vfile, 0,
+							 bootmgfw_path,
+							 efi_bootarch() ) ) ) {
+				DBG ( "...extracted %ls\n", bootmgfw_path );
+			}
 		}
 	}
 
 	/* Check that we have a boot file */
-	if ( ! bootmgfw[0] ) {
+	if ( ! bootmgfw ) {
 		die ( "FATAL: no %ls or bootmgfw.efi found\n",
 		      efi_bootarch() );
 	}

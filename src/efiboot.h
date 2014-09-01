@@ -30,7 +30,9 @@
 #include "efi.h"
 #include "efi/Protocol/DevicePath.h"
 
-extern EFI_STATUS efi_boot ( EFI_DEVICE_PATH_PROTOCOL *parent,
-			     const CHAR16 *name, EFI_HANDLE device );
+struct vdisk_file;
+
+extern void efi_boot ( struct vdisk_file *file,
+		       EFI_DEVICE_PATH_PROTOCOL *path );
 
 #endif /* _EFIBOOT_H */
