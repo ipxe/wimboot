@@ -401,7 +401,7 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 		if ( wcscasecmp ( name, name_buf ) != 0 )
 			continue;
 
-		DBG ( "...found entry \"%ls\"\n", name );
+		DBG2 ( "...found entry \"%ls\"\n", name );
 		return 0;
 	}
 }
