@@ -202,7 +202,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 			DBG ( "...found WIM file %ls\n", wname );
 			vfile->patch = patch_wim;
 			if ( ( ! bootmgfw ) &&
-			     ( bootmgfw = wim_add_file ( vfile, 0,
+			     ( bootmgfw = wim_add_file ( vfile, cmdline_index,
 							 bootmgfw_path,
 							 efi_bootarch() ) ) ) {
 				DBG ( "...extracted %ls\n", bootmgfw_path );

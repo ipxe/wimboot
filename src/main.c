@@ -341,7 +341,8 @@ static int add_file ( const char *name, void *data, size_t len ) {
 		DBG ( "...found WIM file %s\n", name );
 		file->patch = patch_wim;
 		if ( ( ! bootmgr ) &&
-		     ( bootmgr = wim_add_file ( file, 0, bootmgr_path,
+		     ( bootmgr = wim_add_file ( file, cmdline_index,
+						bootmgr_path,
 						L"bootmgr.exe" ) ) ) {
 			DBG ( "...extracted bootmgr.exe\n" );
 		}
