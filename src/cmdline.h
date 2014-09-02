@@ -29,6 +29,7 @@
 
 extern int cmdline_rawbcd;
 extern int cmdline_gui;
+extern int cmdline_pause;
 extern unsigned int cmdline_index;
 extern void process_cmdline ( char *cmdline );
 

@@ -403,6 +403,8 @@ int main ( void ) {
 
 	/* Jump to PE image */
 	DBG ( "Entering bootmgr.exe with parameters at %p\n", &bootapps );
+	if ( cmdline_pause )
+		getchar();
 	pe.entry ( &bootapps.bootapp );
 	die ( "FATAL: bootmgr.exe returned\n" );
 }

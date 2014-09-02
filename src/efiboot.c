@@ -136,6 +136,8 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path ) {
 		efi_open_protocol_wrapper;
 
 	/* Start image */
+	if ( cmdline_pause )
+		getchar();
 	if ( ( efirc = bs->StartImage ( handle, NULL, NULL ) ) != 0 ) {
 		die ( "Could not start %s: %#lx\n",
 		      file->name, ( ( unsigned long ) efirc ) );

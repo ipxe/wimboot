@@ -38,6 +38,9 @@ int cmdline_rawbcd;
 /** Allow graphical output from bootmgr/bootmgfw */
 int cmdline_gui;
 
+/** Pause before booting OS */
+int cmdline_pause;
+
 /** WIM boot index */
 unsigned int cmdline_index;
 
@@ -84,6 +87,8 @@ void process_cmdline ( char *cmdline ) {
 			cmdline_rawbcd = 1;
 		} else if ( strcmp ( key, "gui" ) == 0 ) {
 			cmdline_gui = 1;
+		} else if ( strcmp ( key, "pause" ) == 0 ) {
+			cmdline_pause = 1;
 		} else if ( strcmp ( key, "index" ) == 0 ) {
 			if ( ( ! value ) || ( ! value[0] ) )
 				die ( "Argument \"index\" needs a value\n" );
