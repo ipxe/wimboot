@@ -39,6 +39,7 @@
 #include "xca.h"
 #include "cmdline.h"
 #include "wimpatch.h"
+#include "wimfile.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -55,11 +56,11 @@ void *initrd;
 /** Length of initrd */
 size_t initrd_len;
 
-/** bootmgr.exe image */
-const void *bootmgr;
+/** bootmgr.exe path within WIM */
+static const wchar_t bootmgr_path[] = L"\\Windows\\Boot\\PXE\\bootmgr.exe";
 
-/** bootmgr.exe length */
-size_t bootmgr_len;
+/** bootmgr.exe file */
+static struct vdisk_file *bootmgr;
 
 /** Minimal length of embedded bootmgr.exe */
 #define BOOTMGR_MIN_LEN 16384
@@ -71,8 +72,6 @@ enum {
 	INITRD_REGION,
 	NUM_REGIONS
 };
-
-static int add_file ( const char *name, void *data, size_t len );
 
 /**
  * Wrap interrupt callback
@@ -197,11 +196,25 @@ static int is_empty_pgh ( const void *pgh ) {
 }
 
 /**
- * Extract embedded bootmgr.exe
+ * Read from file
+ *
+ * @v file		Virtual file
+ * @v data		Data buffer
+ * @v offset		Offset
+ * @v len		Length
+ */
+static void read_file ( struct vdisk_file *file, void *data, size_t offset,
+			size_t len ) {
+
+	memcpy ( data, ( file->opaque + offset ), len );
+}
+
+/**
+ * Add embedded bootmgr.exe extracted from bootmgr
  *
  * @v data		File data
  * @v len		Length
- * @ret rc		Return status code
+ * @ret file		Virtual file, or NULL
  *
  * bootmgr.exe is awkward to obtain, since it is not available as a
  * standalone file on the installation media, or on an installed
@@ -212,7 +225,7 @@ static int is_empty_pgh ( const void *pgh ) {
  * A compressed version of bootmgr.exe is contained within bootmgr,
  * which is trivial to obtain.
  */
-static int extract_bootmgr ( const void *data, size_t len ) {
+static struct vdisk_file * add_bootmgr ( const void *data, size_t len ) {
 	const uint8_t *compressed;
 	size_t offset;
 	size_t compressed_len;
@@ -291,28 +304,12 @@ static int extract_bootmgr ( const void *data, size_t len ) {
 		decompress ( compressed, compressed_len, initrd );
 
 		/* Add decompressed image */
-		return add_file ( "bootmgr.exe", initrd, decompressed_len );
+		return vdisk_add_file ( "bootmgr.exe", initrd,
+					decompressed_len, read_file );
 	}
 
-	/* Treat as non-fatal; a separate copy of bootmgr.exe may
-	 * still be provided.
-	 */
 	DBG ( "...no embedded bootmgr.exe found\n" );
-	return 0;
-}
-
-/**
- * Read from file
- *
- * @v file		Virtual file
- * @v data		Data buffer
- * @v offset		Offset
- * @v len		Length
- */
-static void read_file ( struct vdisk_file *file, void *data, size_t offset,
-			size_t len ) {
-
-	memcpy ( data, ( file->opaque + offset ), len );
+	return NULL;
 }
 
 /**
@@ -325,7 +322,6 @@ static void read_file ( struct vdisk_file *file, void *data, size_t offset,
  */
 static int add_file ( const char *name, void *data, size_t len ) {
 	struct vdisk_file *file;
-	int rc;
 
 	/* Store file */
 	file = vdisk_add_file ( name, data, len, read_file );
@@ -333,16 +329,22 @@ static int add_file ( const char *name, void *data, size_t len ) {
 	/* Check for special-case files */
 	if ( strcasecmp ( name, "bootmgr.exe" ) == 0 ) {
 		DBG ( "...found bootmgr.exe\n" );
-		bootmgr = data;
-		bootmgr_len = len;
+		bootmgr = file;
 	} else if ( strcasecmp ( name, "bootmgr" ) == 0 ) {
 		DBG ( "...found bootmgr\n" );
-		if ( ( rc = extract_bootmgr ( data, len ) ) != 0 )
-			return rc;
+		if ( ( ! bootmgr ) &&
+		     ( bootmgr = add_bootmgr ( data, len ) ) ) {
+			DBG ( "...extracted bootmgr.exe\n" );
+		}
 	} else if ( strcasecmp ( ( name + strlen ( name ) - 4 ),
 				 ".wim" ) == 0 ) {
 		DBG ( "...found WIM file %s\n", name );
 		file->patch = patch_wim;
+		if ( ( ! bootmgr ) &&
+		     ( bootmgr = wim_add_file ( file, 0, bootmgr_path,
+						L"bootmgr.exe" ) ) ) {
+			DBG ( "...extracted bootmgr.exe\n" );
+		}
 	}
 
 	return 0;
@@ -353,6 +355,8 @@ static int add_file ( const char *name, void *data, size_t len ) {
  *
  */
 int main ( void ) {
+	size_t padded_len;
+	void *raw_pe;
 	struct loaded_pe pe;
 
 	/* Print welcome banner */
@@ -369,10 +373,20 @@ int main ( void ) {
 	/* Add INT 13 drive */
 	callback.drive = initialise_int13();
 
-	/* Load bootmgr.exe to memory */
+	/* Read bootmgr.exe into memory */
 	if ( ! bootmgr )
 		die ( "FATAL: no bootmgr.exe\n" );
-	if ( load_pe ( bootmgr, bootmgr_len, &pe ) != 0 )
+	if ( bootmgr->read == read_file ) {
+		raw_pe = bootmgr->opaque;
+	} else {
+		padded_len = ( ( bootmgr->len + PAGE_SIZE - 1 ) &
+			       ~( PAGE_SIZE -1 ) );
+		raw_pe = ( initrd - padded_len );
+		bootmgr->read ( bootmgr, raw_pe, 0, bootmgr->len );
+	}
+
+	/* Load bootmgr.exe into memory */
+	if ( load_pe ( raw_pe, bootmgr->len, &pe ) != 0 )
 		die ( "FATAL: Could not load bootmgr.exe\n" );
 
 	/* Complete boot application descriptor set */
