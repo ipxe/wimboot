@@ -28,59 +28,28 @@
  */
 
 #include <stdint.h>
+#include "huffman.h"
 
-/** Maximum length (in bits) of a raw symbol */
-#define XCA_RAW_MAX_LEN 9
+/** Number of XCA codes */
+#define XCA_CODES 512
 
-/** Number of raw symbols */
-#define XCA_RAW_COUNT ( 1 << XCA_RAW_MAX_LEN )
-
-/** Type capable of holding a maximum-length raw symbol */
-typedef uint16_t xca_raw_t;
-
-/** Maximum length (in bits) of a Huffman-coded symbol */
-#define XCA_HUF_MAX_LEN 15
-
-/** An XCA Huffman-coded symbol set of a given length */
-struct xca_huf_symbol {
-	/** Length */
-	uint8_t len;
-	/** Shift */
-	uint8_t shift;
-	/** First Huffman-coded symbol having this length
-	 *
-	 * Normalised to be the length of a maximum-length
-	 * Huffman-coded symbol.
-	 */
-	unsigned int start;
-	/** Number of Huffman-coded symbols having this length */
-	unsigned int freq;
-	/** Raw symbols having this length when Huffman-coded
-	 *
-	 * This is a pointer into the XCA raw symbol table, adjusted
-	 * so that the Huffman-coded symbol can be right-shifted and
-	 * used directly as an array index.
-	 */
-	xca_raw_t *raw;
-};
-
-/** XCA symbol table */
-struct xca_symbols {
-	/** Huffman-coded symbol set for each length */
-	struct xca_huf_symbol huf[XCA_HUF_MAX_LEN];
+/** XCA decompressor */
+struct xca {
+	/** Huffman alphabet */
+	struct huffman_alphabet alphabet;
 	/** Raw symbols
 	 *
-	 * Ordered by Huffman-coded symbol length, then by symbol value.
+	 * Must immediately follow the Huffman alphabet.
 	 */
-	xca_raw_t raw[XCA_RAW_COUNT];
-	/** First byte lookup table */
-	uint8_t max_len[256];
+	huffman_raw_symbol_t raw[XCA_CODES];
+	/** Code lengths */
+	uint8_t lengths[XCA_CODES];
 };
 
 /** XCA symbol Huffman lengths table */
 struct xca_huf_len {
 	/** Lengths of each symbol */
-	uint8_t nibbles[ XCA_RAW_COUNT / 2 ];
+	uint8_t nibbles[ XCA_CODES / 2 ];
 } __attribute__ (( packed ));
 
 /**
@@ -117,4 +86,3 @@ static inline unsigned int xca_huf_len ( const struct xca_huf_len *lengths,
 extern ssize_t xca_decompress ( const void *data, size_t len, void *buf );
 
 #endif /* _XCA_H */
-

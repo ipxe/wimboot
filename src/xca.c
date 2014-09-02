@@ -29,154 +29,8 @@
 #include <string.h>
 #include <stdio.h>
 #include "wimboot.h"
+#include "huffman.h"
 #include "xca.h"
-
-/**
- * Construct XCA symbol table
- *
- * @v lengths		Huffman lengths tablee
- * @v sym		Symbol table to fill in
- * @ret rc		Return status code
- */
-static int xca_symbols ( const struct xca_huf_len *lengths,
-			 struct xca_symbols *sym ) {
-	struct xca_huf_symbol *huf_sym;
-	unsigned int huf;
-	unsigned int raw;
-	unsigned int len;
-	unsigned int cum_freq;
-	unsigned int adjustment;
-	unsigned int first_byte;
-
-	/* Zero symbol table */
-	memset ( sym, 0, sizeof ( *sym ) );
-
-	/* Count number of symbols with each Huffman-coded length */
-	for ( raw = 0 ; raw < XCA_RAW_COUNT ; raw++ ) {
-		len = xca_huf_len ( lengths, raw );
-		if ( len ) {
-			huf_sym = &sym->huf[ len - 1 ];
-			huf_sym->freq++;
-		}
-	}
-
-	/* Populate Huffman-coded symbol table */
-	huf = 0;
-	cum_freq = 0;
-	for ( len = 1 ; len <= XCA_HUF_MAX_LEN ; len++ ) {
-		huf_sym = &sym->huf[ len - 1 ];
-		huf_sym->len = len;
-		huf_sym->shift = ( XCA_HUF_MAX_LEN - len );
-		huf_sym->start = ( huf << huf_sym->shift );
-		huf_sym->raw = &sym->raw[cum_freq];
-		huf += huf_sym->freq;
-		if ( huf > ( 1U << len ) ) {
-			DBG ( "Too many Huffman symbols with lengths <=%d\n",
-			      len );
-			return -1;
-		}
-		huf <<= 1;
-		cum_freq += huf_sym->freq;
-	}
-
-	/* Populate raw symbol table */
-	for ( raw = 0 ; raw < XCA_RAW_COUNT ; raw++ ) {
-		len = xca_huf_len ( lengths, raw );
-		if ( len ) {
-			huf_sym = &sym->huf[ len - 1 ];
-			*(huf_sym->raw++) = raw;
-		}
-	}
-
-	/* Adjust Huffman-coded symbol table raw pointers */
-	for ( len = 1 ; len <= XCA_HUF_MAX_LEN ; len++ ) {
-		huf_sym = &sym->huf[ len - 1 ];
-		huf_sym->raw -= huf_sym->freq; /* Reset to first symbol */
-		adjustment = ( huf_sym->start >> huf_sym->shift );
-		huf_sym->raw -= adjustment; /* Adjust for quick indexing */
-	}
-
-	/* Populate first byte lookup table */
-	for ( len = 1 ; len <= XCA_HUF_MAX_LEN ; len++ ) {
-		huf_sym = &sym->huf[ len - 1 ];
-		for ( first_byte = ( huf_sym->start >>
-				     ( XCA_HUF_MAX_LEN - 8 ) ) ;
-		      first_byte < 256 ; first_byte++ ) {
-			sym->max_len[first_byte] = len;
-		}
-
-	}
-
-	return 0;
-}
-
-/**
- * Dump XCA symbol table (for debugging)
- *
- * @v sym		Symbol table
- */
-static void __attribute__ (( unused )) xca_dump ( struct xca_symbols *sym ) {
-	struct xca_huf_symbol *huf_sym;
-	unsigned int len;
-	unsigned int huf_start;
-	unsigned int huf_end;
-	unsigned int huf;
-
-	/* Dump symbols for each length */
-	for ( len = 1 ; len <= XCA_HUF_MAX_LEN ; len++ ) {
-		huf_sym = &sym->huf[ len - 1 ];
-		printf ( "Length %d: start %04x:", len, huf_sym->start );
-		huf_start = ( huf_sym->start >> huf_sym->shift );
-		huf_end = ( huf_start + huf_sym->freq );
-		for ( huf = huf_start ; huf < huf_end ; huf++ )
-			printf ( " %03x", huf_sym->raw[huf] );
-		printf ( "\n" );
-	}
-}
-
-/**
- * Decode XCA Huffman-coded symbol
- *
- * @v sym		Symbol table
- * @v huf_max		Huffman-coded symbol (normalised to maximum length)
- * @ret huf_sym		Huffman-coded symbol set
- */
-static struct xca_huf_symbol * xca_decode ( struct xca_symbols *sym,
-					    unsigned int huf_max ) {
-	struct xca_huf_symbol *huf_sym;
-	unsigned int first_byte;
-
-	/* Identify length by scanning table */
-	first_byte = ( huf_max >> ( XCA_HUF_MAX_LEN - 8 ) );
-	huf_sym = &sym->huf[ sym->max_len[first_byte] - 1 ];
-	while ( 1 ) {
-		if ( likely ( huf_max >= huf_sym->start ) )
-			return huf_sym;
-		huf_sym--;
-	}
-}
-
-/**
- * Dump XCA Huffman decoding result (for debugging)
- *
- * @v sym		Symbol table
- * @v huf_max		Huffman-coded symbol (normalised to maximum length)
- */
-static void __attribute__ (( unused ))
-xca_decode_dump ( struct xca_symbols *sym, unsigned int huf_max ) {
-	struct xca_huf_symbol *huf_sym;
-	unsigned int raw;
-
-	/* Decode symbol */
-	huf_sym = xca_decode ( sym, huf_max );
-
-	/* Determine raw symbol */
-	raw = huf_sym->raw[ huf_max >> huf_sym->shift ];
-
-	/* Look up raw symbol */
-	printf ( "Decoded %04x to length %d value %03x\n",
-		 huf_max, huf_sym->len, raw );
-}
 
 /**
  * Decompress XCA-compressed data
@@ -193,11 +47,11 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 	size_t out_len = 0;
 	size_t out_len_threshold = 0;
 	const struct xca_huf_len *lengths;
-	struct xca_symbols sym;
+	struct xca xca;
 	uint32_t accum = 0;
 	int extra_bits = 0;
-	unsigned int huf_max;
-	struct xca_huf_symbol *huf_sym;
+	unsigned int huf;
+	struct huffman_symbols *sym;
 	unsigned int raw;
 	unsigned int match_len;
 	unsigned int match_offset_bits;
@@ -211,7 +65,7 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 		/* (Re)initialise decompressor if applicable */
 		if ( out_len >= out_len_threshold ) {
 
-			/* Construct symbol table */
+			/* Construct symbol lengths */
 			lengths = src;
 			src += sizeof ( *lengths );
 			if ( src > end ) {
@@ -220,7 +74,13 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 				      ( src - data ) );
 				return -1;
 			}
-			if ( ( rc = xca_symbols ( lengths, &sym ) ) != 0 )
+			for ( raw = 0 ; raw < XCA_CODES ; raw++ )
+				xca.lengths[raw] = xca_huf_len ( lengths, raw );
+
+			/* Construct Huffman alphabet */
+			if ( ( rc = huffman_alphabet ( &xca.alphabet,
+						       xca.lengths,
+						       XCA_CODES ) ) != 0 )
 				return rc;
 
 			/* Initialise state */
@@ -234,11 +94,11 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 		}
 
 		/* Determine symbol */
-		huf_max = ( accum >> ( 32 - XCA_HUF_MAX_LEN ) );
-		huf_sym = xca_decode ( &sym, huf_max );
-		raw = huf_sym->raw[ huf_max >> huf_sym->shift ];
-		accum <<= huf_sym->len;
-		extra_bits -= huf_sym->len;
+		huf = ( accum >> ( 32 - HUFFMAN_BITS ) );
+		sym = huffman_sym ( &xca.alphabet, huf );
+		raw = huffman_raw ( sym, huf );
+		accum <<= huffman_len ( sym );
+		extra_bits -= huffman_len ( sym );
 		if ( extra_bits < 0 ) {
 			accum |= ( XCA_GET16 ( src ) << ( -extra_bits ) );
 			extra_bits += 16;
