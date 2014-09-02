@@ -328,29 +328,6 @@ int wim_metadata ( struct vdisk_file *file, struct wim_header *header,
 }
 
 /**
- * Get root directory offset
- *
- * @v file		Virtual file
- * @v meta		Metadata
- * @v offset		Root directory offset to fill in
- * @ret rc		Return status code
- */
-static int wim_root ( struct vdisk_file *file, struct wim_header *header,
-		      struct wim_resource_header *meta, size_t *offset ) {
-	struct wim_security_header security;
-	int rc;
-
-	/* Read security data header */
-	if ( ( rc = wim_read ( file, header, meta, &security, 0,
-			       sizeof ( security ) ) ) != 0 )
-		return rc;
-
-	*offset = ( ( security.len + sizeof ( uint64_t ) - 1 ) &
-		    ~( sizeof ( uint64_t ) - 1 ) );
-	return 0;
-}
-
-/**
  * Get directory entry
  *
  * @v file		Virtual file
@@ -420,6 +397,7 @@ int wim_file ( struct vdisk_file *file, struct wim_header *header,
 	       struct wim_resource_header *meta, const wchar_t *path,
 	       struct wim_resource_header *resource ) {
 	wchar_t path_copy[ wcslen ( path ) + 1 /* WNUL */ ];
+	struct wim_security_header security;
 	struct wim_directory_entry direntry;
 	struct wim_lookup_entry entry;
 	size_t offset;
@@ -427,9 +405,14 @@ int wim_file ( struct vdisk_file *file, struct wim_header *header,
 	wchar_t *next;
 	int rc;
 
-	/* Get root directory offset */
-	if ( ( rc = wim_root ( file, header, meta, &offset ) ) != 0 )
+	/* Read security data header */
+	if ( ( rc = wim_read ( file, header, meta, &security, 0,
+			       sizeof ( security ) ) ) != 0 )
 		return rc;
+
+	/* Get root directory offset */
+	offset = ( ( security.len + sizeof ( uint64_t ) - 1 ) &
+		    ~( sizeof ( uint64_t ) - 1 ) );
 
 	/* Find directory entry */
 	name = memcpy ( path_copy, path, sizeof ( path_copy ) );
