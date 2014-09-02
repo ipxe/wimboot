@@ -71,6 +71,15 @@ SECTIONS {
 		*(.bss)
 		*(.bss.*)
 		*(COMMON)
+
+		/* bootmgr.exe hardcodes the address 0x30000 for use
+		 * as a buffer accessible by real-mode code.  We can't
+		 * fit our code, data, and stack below this region, so
+		 * explicitly place the stack higher in memory.
+		 */
+		ASSERT ( ABSOLUTE ( . ) <= 0x30000, "Binary too large" );
+		. = 0x40000;
+
 		*(.stack)
 		*(.stack.*)
 		. = ALIGN ( alignment );
