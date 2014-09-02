@@ -24,6 +24,7 @@
  *
  */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include "ctype.h"
@@ -190,6 +191,22 @@ size_t wcslen ( const wchar_t *str ) {
 	while ( *(str++) )
 		len++;
 	return len;
+}
+
+/**
+ * Find character in wide-character string
+ *
+ * @v str		String
+ * @v c			Wide character
+ * @ret first		First occurrence of wide character in string, or NULL
+ */
+wchar_t * wcschr ( const wchar_t *str, wchar_t c ) {
+
+	for ( ; *str ; str++ ) {
+		if ( *str == c )
+			return ( ( wchar_t * )str );
+	}
+	return NULL;
 }
 
 /**
