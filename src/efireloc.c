@@ -302,7 +302,7 @@ static void generate_pe_reloc ( struct pe_relocs **pe_reltab,
  * @v rel		Relocation entry
  * @v pe_reltab		PE relocation table to fill in
  */
-static void process_reloc ( bfd *bfd, asection *section, arelent *rel,
+static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
 			    struct pe_relocs **pe_reltab ) {
 	reloc_howto_type *howto = rel->howto;
 	asymbol *sym = *(rel->sym_ptr_ptr);
