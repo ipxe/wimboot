@@ -1,5 +1,7 @@
 wimboot
+*.s
 *.o
+*.a
 *.elf
 *.map
 efireloc

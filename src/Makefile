@@ -12,6 +12,8 @@ OBJECTS_i386_x86_64 := $(patsubst %.o,%.i386.x86_64.o,$(OBJECTS))
 HEADERS := $(wildcard *.h)
 
 HOST_CC		:= $(CC)
+AS		:= $(AS)
+ECHO		:= echo
 OBJCOPY 	:= objcopy
 AR		:= ar
 RANLIB		:= ranlib
@@ -27,12 +29,26 @@ CFLAGS += -DVERSION="\"$(VERSION)\""
 # Inhibit -fno-stack-protector
 SP_TEST = $(CC) -fno-stack-protector -x c -c /dev/null \
                 -o /dev/null >/dev/null 2>&1
-SP_FLAGS := $(shell $(SP_TEST) && echo '-fno-stack-protector')
+SP_FLAGS := $(shell $(SP_TEST) && $(ECHO) '-fno-stack-protector')
 WORKAROUND_CFLAGS += $(SP_FLAGS)
 
-# The combination of merged constants and our .i386.x86_64.o objects
-# seriously confuses the linker.  Avoid.
-CFLAGS += -fno-merge-constants
+# Inhibit unwanted debugging information
+CFI_TEST = $(CC) -fno-dwarf2-cfi-asm -fno-exceptions -fno-unwind-tables \
+		 -fno-asynchronous-unwind-tables -x c -c /dev/null \
+		 -o /dev/null >/dev/null 2>&1
+CFI_FLAGS := $(shell $(CFI_TEST) && \
+	       $(ECHO) '-fno-dwarf2-cfi-asm -fno-exceptions ' \
+		    '-fno-unwind-tables -fno-asynchronous-unwind-tables')
+WORKAROUND_CFLAGS += $(CFI_FLAGS)
+
+# Add -maccumulate-outgoing-args if required by this version of gcc
+MS_ABI_TEST_CODE := extern void __attribute__ (( ms_abi )) ms_abi(); \
+		    void sysv_abi ( void ) { ms_abi(); }
+MS_ABI_TEST = $(ECHO) '$(MS_ABI_TEST_CODE)' | \
+	      $(CC) -m64 -mno-accumulate-outgoing-args -x c -c - -o /dev/null \
+		    >/dev/null 2>&1
+MS_ABI_FLAGS := $(shell $(MS_ABI_TEST) || $(ECHO) '-maccumulate-outgoing-args')
+WORKAROUND_CFLAGS += $(MS_ABI_FLAGS)
 
 CFLAGS += $(WORKAROUND_CFLAGS)
 CFLAGS += $(EXTRA_CFLAGS)
@@ -63,11 +79,14 @@ wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 #
 # i386 objects
 
-%.i386.o : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m32 -march=i386 -DASSEMBLY -Ui386 -E $< | as --32 -o $@
+%.i386.s : %.S $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -m32 -march=i386 -DASSEMBLY -Ui386 -E $< -o $@
 
-%.i386.o : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m32 -march=i386 -c $< -o $@
+%.i386.s : %.c $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -m32 -march=i386 -S $< -o $@
+
+%.i386.o : %.i386.s i386.i Makefile
+	$(AS) --32 i386.i $< -o $@
 
 lib.i386.a : $(OBJECTS_i386) Makefile
 	rm -f $@
@@ -77,37 +96,25 @@ lib.i386.a : $(OBJECTS_i386) Makefile
 ###############################################################################
 #
 # i386 objects to be linked into an x86_64 binary
-#
-# For objects built from .c files: convert the .i386.o object to
-# elf64-x86-64 and prefix symbol names with __i386_
-#
-# For objects built from .S files: take the .x86_64.o object and
-# prefix symbol names with __i386_
-#
-# Objects built from .S files already include explicit .code32
-# directives, and so will always build 32-bit code.  However, the
-# .i386.o object will use Elf32_Rel relocations, while the .x86_64.o
-# object will use Elf64_Rela relocations.  The former cause spurious
-# "relocation truncated to fit" errors when linking
-# callback.i386.x86_64.o, since the inline addend (-BASE_ADDRESS) is
-# interpreted as unsigned.  The Elf64_Rela addends are signed, and so
-# the problem does not arise.
 
-%.i386.x86_64.o : %.i386.o %.c Makefile
-	$(OBJCOPY) -Oelf64-x86-64 --prefix-symbols=__i386_ $< $@
+%.i386.x86_64.raw.o : %.i386.s i386.i Makefile
+	$(AS) --64 i386.i $< -o $@
 
-%.i386.x86_64.o : %.x86_64.o %.S Makefile
+%.i386.x86_64.o : %.i386.x86_64.raw.o Makefile
 	$(OBJCOPY) --prefix-symbols=__i386_ $< $@
 
 ###############################################################################
 #
 # x86_64 objects
 
-%.x86_64.o : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m64 -DASSEMBLY -Ui386 -E $< | as --64 -o $@
+%.x86_64.s : %.S $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -m64 -DASSEMBLY -Ui386 -E $< -o $@
 
-%.x86_64.o : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m64 -c $< -o $@
+%.x86_64.s : %.c $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -m64 -S $< -o $@
+
+%.x86_64.o : %.x86_64.s x86_64.i Makefile
+	$(AS) --64 x86_64.i $< -o $@
 
 lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 	rm -f $@
@@ -131,6 +138,6 @@ efireloc : efireloc.c Makefile
 # Cleanup
 
 clean :
-	rm -f *.o *.a *.elf
+	rm -f *.s *.o *.a *.elf
 	rm -f efireloc
 	rm -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
