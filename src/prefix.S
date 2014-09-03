@@ -60,7 +60,7 @@
 /* PE header architecture-dependent values */
 #if __x86_64__
 	.equ	coff_machine, 0x8664
-	.equ	coff_characteristics, 0x2002
+	.equ	coff_characteristics, 0x2022
 	.equ	opt_magic, 0x20b
 #else
 	.equ	coff_machine, 0x014c

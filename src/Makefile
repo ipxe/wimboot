@@ -26,6 +26,9 @@ HOST_CFLAGS += -Wall -W -Werror
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
 CFLAGS += -DVERSION="\"$(VERSION)\""
 
+CFLAGS_i386 += -m32 -march=i386
+CFLAGS_x86_64 += -m64 -mno-red-zone -fpie
+
 # Inhibit -fno-stack-protector
 SP_TEST = $(CC) -fno-stack-protector -x c -c /dev/null \
                 -o /dev/null >/dev/null 2>&1
@@ -57,6 +60,8 @@ ifneq ($(DEBUG),)
 CFLAGS += -DDEBUG=$(DEBUG)
 endif
 
+CFLAGS += -include compiler.h
+
 ###############################################################################
 #
 # Final targets
@@ -80,10 +85,10 @@ wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 # i386 objects
 
 %.i386.s : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m32 -march=i386 -DASSEMBLY -Ui386 -E $< -o $@
+	$(CC) $(CFLAGS) $(CFLAGS_i386) -DASSEMBLY -Ui386 -E $< -o $@
 
 %.i386.s : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m32 -march=i386 -S $< -o $@
+	$(CC) $(CFLAGS) $(CFLAGS_i386) -S $< -o $@
 
 %.i386.o : %.i386.s i386.i Makefile
 	$(AS) --32 i386.i $< -o $@
@@ -108,10 +113,10 @@ lib.i386.a : $(OBJECTS_i386) Makefile
 # x86_64 objects
 
 %.x86_64.s : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m64 -DASSEMBLY -Ui386 -E $< -o $@
+	$(CC) $(CFLAGS) $(CFLAGS_x86_64) -DASSEMBLY -Ui386 -E $< -o $@
 
 %.x86_64.s : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -m64 -S $< -o $@
+	$(CC) $(CFLAGS) $(CFLAGS_x86_64) -S $< -o $@
 
 %.x86_64.o : %.x86_64.s x86_64.i Makefile
 	$(AS) --64 x86_64.i $< -o $@
