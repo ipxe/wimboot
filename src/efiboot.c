@@ -29,6 +29,7 @@
 #include "wimboot.h"
 #include "cmdline.h"
 #include "vdisk.h"
+#include "pause.h"
 #include "efi.h"
 #include "efi/Protocol/GraphicsOutput.h"
 #include "efipath.h"
@@ -137,7 +138,7 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path ) {
 
 	/* Start image */
 	if ( cmdline_pause )
-		getchar();
+		pause();
 	if ( ( efirc = bs->StartImage ( handle, NULL, NULL ) ) != 0 ) {
 		die ( "Could not start %s: %#lx\n",
 		      file->name, ( ( unsigned long ) efirc ) );

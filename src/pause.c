@@ -1,6 +1,3 @@
-#ifndef _CMDLINE_H
-#define _CMDLINE_H
-
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
  *
@@ -23,15 +20,27 @@
 /**
  * @file
  *
- * Command line
+ * Diagnostic pause
  *
  */
 
-extern int cmdline_rawbcd;
-extern int cmdline_gui;
-extern int cmdline_pause;
-extern int cmdline_pause_quiet;
-extern unsigned int cmdline_index;
-extern void process_cmdline ( char *cmdline );
+#include <stdio.h>
+#include "wimboot.h"
+#include "cmdline.h"
+#include "pause.h"
 
-#endif /* _CMDLINE_H */
+/**
+ * Pause before booting
+ *
+ */
+void pause ( void ) {
+
+	/* Wait for keypress, prompting unless inhibited */
+	if ( cmdline_pause_quiet ) {
+		getchar();
+	} else {
+		printf ( "Press any key to continue booting..." );
+		getchar();
+		printf ( "\n" );
+	}
+}

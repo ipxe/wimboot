@@ -1,5 +1,5 @@
-#ifndef _CMDLINE_H
-#define _CMDLINE_H
+#ifndef _PAUSE_H
+#define _PAUSE_H
 
 /*
  * Copyright (C) 2014 Michael Brown <mbrown@fensystems.co.uk>.
@@ -23,15 +23,10 @@
 /**
  * @file
  *
- * Command line
+ * Diagnostic pause
  *
  */
 
-extern int cmdline_rawbcd;
-extern int cmdline_gui;
-extern int cmdline_pause;
-extern int cmdline_pause_quiet;
-extern unsigned int cmdline_index;
-extern void process_cmdline ( char *cmdline );
+extern void pause ( void );
 
-#endif /* _CMDLINE_H */
+#endif /* _PAUSE_H */

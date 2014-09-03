@@ -40,6 +40,7 @@
 #include "cmdline.h"
 #include "wimpatch.h"
 #include "wimfile.h"
+#include "pause.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -405,7 +406,7 @@ int main ( void ) {
 	/* Jump to PE image */
 	DBG ( "Entering bootmgr.exe with parameters at %p\n", &bootapps );
 	if ( cmdline_pause )
-		getchar();
+		pause();
 	pe.entry ( &bootapps.bootapp );
 	die ( "FATAL: bootmgr.exe returned\n" );
 }
