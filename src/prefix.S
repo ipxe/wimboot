@@ -82,7 +82,7 @@ mz_header:
 mz_lfanew:
 	.word	( pe_header - _prefix )
 	.equ	mz_header_len, . - mz_header
-	.size	mz_header, mz_header_len
+	.size	mz_header,     . - mz_header
 
 	.org	0x40
 pe_header:
@@ -96,7 +96,7 @@ pe_header:
 	.word	( opt_header_len + data_directory_len ) /*SizeOfOptionalHeader*/
 	.word	coff_characteristics	/* Characteristics */
 	.equ	pe_header_len, . - pe_header
-	.size	pe_header, pe_header_len
+	.size	pe_header,     . - pe_header
 opt_header:
 	.word	opt_magic		/* Magic */
 	.byte	0			/* MajorLinkerVersion */
@@ -139,8 +139,8 @@ opt_header:
 #endif
 	.long	0			/* LoaderFlags */
 	.long	16			/* NumberOfRvaAndSizes */
-	.equ	opt_header_len, . - opt_header
-	.size	opt_header, opt_header_len
+	.equ	opt_header_len,	. - opt_header
+	.size	opt_header,	. - opt_header
 data_directory:
 	.org	data_directory + ( 8 * 5 )
 directory_entry_reloc:
@@ -152,7 +152,7 @@ directory_entry_debug:
 	.long	( debug_len + debug_rsds_len )
 	.org	data_directory + ( 8 * 16 )
 	.equ	data_directory_len, . - data_directory
-	.size	data_directory, data_directory_len
+	.size	data_directory,	    . - data_directory
 coff_sections:
 	.ascii	".bss16"		/* Name */
 	.byte	0, 0
@@ -198,7 +198,7 @@ coff_sections:
 	.word	0			/* NumberOfLinenumbers */
 	.long	0x48500040		/* Characteristics */
 	.equ	coff_sections_len, . - coff_sections
-	.size	coff_sections, coff_sections_len
+	.size	coff_sections,	   . - coff_sections
 
 	.org	0x1f1
 setup_sects:
@@ -336,7 +336,7 @@ debug:
 	.long	( debug_rsds - _prefix ) /* RVA */
 	.long	0			/* FileOffset */
 	.equ	debug_len, . - debug
-	.size	debug, debug_len
+	.size	debug,	   . - debug
 debug_rsds:
 	.ascii	"RSDS"			/* Signature */
 	.long	0			/* Unknown */
@@ -346,6 +346,6 @@ debug_rsds:
 	.long	0			/* Unknown5 */
 	.asciz	"wimboot.efi"
 	.equ	debug_rsds_len, . - debug_rsds
-	.size	debug_rsds, debug_rsds_len
+	.size	debug_rsds,	. - debug_rsds
 
 	.org	( ( SETUP_SECTS + 1 ) * SECTOR_SIZE )
