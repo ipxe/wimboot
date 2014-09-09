@@ -85,8 +85,10 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
  *
  * @v file		Virtual file
  * @v path		Device path
+ * @v device		Device handle
  */
-void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path ) {
+void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
+		EFI_HANDLE device ) {
 	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
 	union {
 		EFI_LOADED_IMAGE_PROTOCOL *image;
@@ -128,6 +130,13 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path ) {
 					  EFI_OPEN_PROTOCOL_GET_PROTOCOL ))!=0){
 		die ( "Could not get loaded image protocol for %s: %#lx\n",
 		      file->name, ( ( unsigned long ) efirc ) );
+	}
+
+	/* Force correct device handle */
+	if ( loaded.image->DeviceHandle != device ) {
+		DBG ( "Forcing correct DeviceHandle (%p->%p)\n",
+		      loaded.image->DeviceHandle, device );
+		loaded.image->DeviceHandle = device;
 	}
 
 	/* Intercept calls to OpenProtocol() */
