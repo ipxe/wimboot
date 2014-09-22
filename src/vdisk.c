@@ -217,7 +217,7 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 	/* Construct long filename record */
 	lfn_char = &lfn->lfn.name_1[0];
 	sequence = 1;
-	do {
+	while ( 1 ) {
 
 		/* Initialise long filename, if necessary */
 		if ( lfn->lfn.attr != VDISK_LFN_ATTR ) {
@@ -235,6 +235,10 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 		/* Add character to long filename */
 		c = *(name++);
 		*lfn_char = c;
+		if ( ! c )
+			break;
+
+		/* Move to next character within long filename */
 		if ( lfn_char == &lfn->lfn.name_1[4] ) {
 			lfn_char = &lfn->lfn.name_2[0];
 		} else if ( lfn_char == &lfn->lfn.name_2[5] ) {
@@ -245,8 +249,7 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 		} else {
 			lfn_char++;
 		}
-
-	} while ( c != 0 );
+	}
 	lfn->lfn.sequence |= VDISK_LFN_END;
 
 	return ( lfn - 1 );
