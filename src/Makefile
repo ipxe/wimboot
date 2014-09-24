@@ -26,7 +26,7 @@ HOST_CFLAGS += -Wall -W -Werror
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
 CFLAGS += -DVERSION="\"$(VERSION)\""
 
-CFLAGS_i386 += -m32 -march=i386
+CFLAGS_i386 += -m32 -march=i386 -malign-double
 CFLAGS_x86_64 += -m64 -mno-red-zone -fpie
 
 # Inhibit -fno-stack-protector
