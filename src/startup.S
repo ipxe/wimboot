@@ -39,8 +39,8 @@
 	.globl	startup
 startup:
 	/* Reload GDT, IDT, and all segment registers, and set up stack */
-	lgdt	gdt
-	lidt	idt
+	lgdt	gdtr
+	lidt	idtr
 	ljmp	$FLAT_CS, $1f
 1:	movw	$FLAT_DS, %ax
 	movw	%ax, %ds
@@ -74,8 +74,10 @@ reboot:
 
 	/* Global descriptor table */
 	.section ".rodata16", "aw", @progbits
-	.globl	gdt
+	.align	8
 gdt:
+	.globl	gdtr
+gdtr:
 	.word	gdt_limit
 	.long	gdt
 	/* 64 bit long mode code segment */
@@ -102,12 +104,20 @@ gdt:
 	.equ	gdt_limit, . - gdt - 1
 
 	/* Interrupt descriptor table */
-	.section ".data16", "ax", @progbits
-	.globl	idt
+	.section ".bss16", "aw", @nobits
+	.align	8
 idt:
-	.word	0	/* Limit */
-	.long	0	/* Base */
+	.space	( 256 * 8 )	/* 256 8-byte entries */
 	.size	idt, . - idt
+	.equ	idt_limit, . - idt - 1
+
+	/* Interrupt descriptor table register */
+	.section ".rodata16", "aw", @progbits
+	.globl	idtr
+idtr:
+	.word	idt_limit
+	.long	idt
+	.size	idtr, . - idtr
 
 	/* Stack */
 	.section ".stack", "aw", @nobits

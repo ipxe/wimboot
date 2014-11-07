@@ -137,8 +137,8 @@ call_real:
 	movw	%gs, PARAM_GS(%bp)
 
 	/* Switch back to protected mode */
-	addr32 data32 lgdt %cs:( gdt - BASE_ADDRESS )
-	addr32 data32 lidt %cs:( idt - BASE_ADDRESS )
+	addr32 data32 lgdt %cs:( gdtr - BASE_ADDRESS )
+	addr32 data32 lidt %cs:( idtr - BASE_ADDRESS )
 	popl	%eax
 	movl	%eax, %cr0
 	data32 ljmp $FLAT_CS, $1f
