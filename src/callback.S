@@ -214,8 +214,8 @@ dynamic_int:
 	/* Real-mode interrupt descriptor table */
 	.section ".data16", "ax", @progbits
 rm_idtr:
-	.word	0xffff	/* Limit */
-	.long	0	/* Base */
+	.word	( ( 256 * 4 ) - 1 )	/* Limit (256 segment:offset pairs) */
+	.long	0			/* Base */
 	.size	rm_idtr, . - rm_idtr
 
 	/* Real-mode stack */
