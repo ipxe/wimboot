@@ -17,6 +17,9 @@ ECHO		:= echo
 OBJCOPY 	:= objcopy
 AR		:= ar
 RANLIB		:= ranlib
+CP		:= cp
+RM		:= rm
+LCAB		:= lcab
 BINUTILS_DIR	:= /usr
 BFD_DIR		:= $(BINUTILS_DIR)
 ZLIB_DIR	:= /usr
@@ -66,11 +69,11 @@ CFLAGS += -include compiler.h
 #
 # Final targets
 
-all : wimboot wimboot.i386 wimboot.x86_64
+all : wimboot wimboot.i386 wimboot.x86_64 wimboot.cab
 
 wimboot : wimboot.x86_64 Makefile
-	cp $< $@
-	cp $@ ../$@
+	$(CP) $< $@
+	$(CP) $@ ../$@
 
 wimboot.% : wimboot.%.elf efireloc Makefile
 	$(OBJCOPY) -Obinary $< $@
@@ -79,6 +82,12 @@ wimboot.% : wimboot.%.elf efireloc Makefile
 wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 	$(LD) -m elf_$* -T script.lds -o $@ -q -Map wimboot.$*.map \
 		prefix.$*.o lib.$*.a
+
+wimboot.%.efi : wimboot.% Makefile
+	$(CP) $< $@
+
+wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi Makefile
+	$(LCAB) -n -q wimboot.i386.efi wimboot.x86_64.efi $@
 
 ###############################################################################
 #
@@ -94,7 +103,7 @@ wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 	$(AS) --32 i386.i $< -o $@
 
 lib.i386.a : $(OBJECTS_i386) Makefile
-	rm -f $@
+	$(RM) -f $@
 	$(AR) r $@ $(OBJECTS_i386)
 	$(RANLIB) $@
 
@@ -122,7 +131,7 @@ lib.i386.a : $(OBJECTS_i386) Makefile
 	$(AS) --64 x86_64.i $< -o $@
 
 lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
-	rm -f $@
+	$(RM) -f $@
 	$(AR) r $@ $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64)
 	$(RANLIB) $@
 
@@ -143,6 +152,7 @@ efireloc : efireloc.c Makefile
 # Cleanup
 
 clean :
-	rm -f *.s *.o *.a *.elf
-	rm -f efireloc
-	rm -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
+	$(RM) -f *.s *.o *.a *.elf
+	$(RM) -f efireloc
+	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
+	$(RM) -f wimboot.i386.efi wimboot.x86_64.efi wimboot.cab

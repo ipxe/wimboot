@@ -4,4 +4,6 @@ wimboot
 *.a
 *.elf
 *.map
+*.efi
+*.cab
 efireloc
