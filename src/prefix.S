@@ -149,7 +149,7 @@ directory_entry_reloc:
 	.org	data_directory + ( 8 * 6 )
 directory_entry_debug:
 	.long	( debug - _prefix )
-	.long	( debug_len + debug_rsds_len )
+	.long	debug_len
 	.org	data_directory + ( 8 * 16 )
 	.equ	data_directory_len, . - data_directory
 	.size	data_directory,	    . - data_directory
@@ -334,7 +334,7 @@ debug:
 	.long	2			/* Type */
 	.long	debug_rsds_len		/* SizeOfData */
 	.long	( debug_rsds - _prefix ) /* RVA */
-	.long	0			/* FileOffset */
+	.long	( debug_rsds - _prefix ) /* FileOffset */
 	.equ	debug_len, . - debug
 	.size	debug,	   . - debug
 debug_rsds:
