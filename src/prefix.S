@@ -164,7 +164,7 @@ coff_sections:
 	.long	0			/* PointerToLinenumbers */
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
-	.long	0xc8500080		/* Characteristics */
+	.long	0xc8000080		/* Characteristics */
 	.ascii	".payload"		/* Name */
 	.long	_payload_len		/* Misc.VirtualSize */
 	.long	( _payload - BASE_ADDRESS ) /* VirtualAddress */
@@ -174,7 +174,7 @@ coff_sections:
 	.long	0			/* PointerToLinenumbers */
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
-	.long	0xe85000e0		/* Characteristics */
+	.long	0xe80000e0		/* Characteristics */
 	.ascii	".bss"			/* Name */
 	.byte	0, 0, 0, 0
 	.long	_bss_len		/* Misc.VirtualSize */
@@ -185,7 +185,7 @@ coff_sections:
 	.long	0			/* PointerToLinenumbers */
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
-	.long	0xc8500080		/* Characteristics */
+	.long	0xc8000080		/* Characteristics */
 	.ascii	".reloc"		/* Name */
 	.byte	0, 0
 	.long	0			/* Misc.VirtualSize */
@@ -196,7 +196,7 @@ coff_sections:
 	.long	0			/* PointerToLinenumbers */
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
-	.long	0x48500040		/* Characteristics */
+	.long	0x48000040		/* Characteristics */
 	.equ	coff_sections_len, . - coff_sections
 	.size	coff_sections,	   . - coff_sections
 
