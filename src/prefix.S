@@ -99,8 +99,8 @@ pe_header:
 	.size	pe_header,     . - pe_header
 opt_header:
 	.word	opt_magic		/* Magic */
-	.byte	0			/* MajorLinkerVersion */
-	.byte	0			/* MinorLinkerVersion */
+	.byte	42			/* MajorLinkerVersion */
+	.byte	42			/* MinorLinkerVersion */
 	.long	_text_total_len		/* SizeOfCode */
 	.long	_data_total_len		/* SizeOfInitializedData */
 	.long	_bss_total_len		/* SizeOfUninitializedData */
