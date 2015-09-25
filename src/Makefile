@@ -20,6 +20,8 @@ RANLIB		:= ranlib
 CP		:= cp
 RM		:= rm
 LCAB		:= lcab
+PESIGN		:= pesign
+DIFF		:= diff
 BINUTILS_DIR	:= /usr
 BFD_DIR		:= $(BINUTILS_DIR)
 ZLIB_DIR	:= /usr
@@ -75,15 +77,25 @@ wimboot : wimboot.x86_64 Makefile
 	$(CP) $< $@
 	$(CP) $@ ../$@
 
-wimboot.% : wimboot.%.elf efireloc Makefile
-	$(OBJCOPY) -Obinary $< $@
-	./efireloc $< $@
-
 wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 	$(LD) -m elf_$* -T script.lds -o $@ -q -Map wimboot.$*.map \
 		prefix.$*.o lib.$*.a
 
-wimboot.%.efi : wimboot.% Makefile
+wimboot.%.unsigned : wimboot.%.elf efireloc Makefile
+	$(OBJCOPY) -Obinary $< $@
+	./efireloc $< $@
+
+wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
+	$(PESIGN) -h -i $< > $@
+
+wimboot.%.efi : wimboot.%.unsigned Makefile
+	$(CP) $< $@
+
+wimboot.%.efi.hash : wimboot.%.efi Makefile
+	$(PESIGN) -h -i $< > $@
+
+wimboot.% : wimboot.%.efi wimboot.%.efi.hash wimboot.%.unsigned.hash Makefile
+	$(DIFF) wimboot.$*.efi.hash wimboot.$*.unsigned.hash
 	$(CP) $< $@
 
 wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi Makefile
@@ -155,4 +167,5 @@ clean :
 	$(RM) -f *.s *.o *.a *.elf
 	$(RM) -f efireloc
 	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
+	$(RM) -f wimboot.i386.unsigned wimboot.x86_64.unsigned
 	$(RM) -f wimboot.i386.efi wimboot.x86_64.efi wimboot.cab

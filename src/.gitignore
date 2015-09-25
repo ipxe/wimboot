@@ -4,6 +4,7 @@ wimboot
 *.a
 *.elf
 *.map
+*.unsigned
 *.efi
 *.cab
 efireloc
