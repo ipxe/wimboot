@@ -272,8 +272,8 @@ unsigned long strtoul ( const char *nptr, char **endptr, int base ) {
 	}
 
 	/* Parse digits */
-	while ( 1 ) {
-		digit = *(nptr++);
+	for ( ; ; nptr++ ) {
+		digit = *nptr;
 		if ( digit >= 'a' ) {
 			digit = ( digit - 'a' + 10 );
 		} else if ( digit >= 'A' ) {
