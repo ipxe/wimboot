@@ -19,7 +19,7 @@ AR		:= ar
 RANLIB		:= ranlib
 CP		:= cp
 RM		:= rm
-LCAB		:= lcab
+GCAB		:= gcab
 PESIGN		:= pesign
 DIFF		:= diff
 BINUTILS_DIR	:= /usr
@@ -99,7 +99,7 @@ wimboot.% : wimboot.%.efi wimboot.%.efi.hash wimboot.%.unsigned.hash Makefile
 	$(CP) $< $@
 
 wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi Makefile
-	$(LCAB) -n -q wimboot.i386.efi wimboot.x86_64.efi $@
+	$(GCAB) -n -c $@ wimboot.i386.efi wimboot.x86_64.efi
 
 ###############################################################################
 #
