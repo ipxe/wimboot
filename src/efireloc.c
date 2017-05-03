@@ -452,6 +452,9 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 	pe_sections[RELOC_SECTION_INDEX].Misc.VirtualSize = reloc_len;
 	pe_sections[RELOC_SECTION_INDEX].SizeOfRawData = reloc_len;
 
+	/* Unmap output file header */
+	munmap ( dos, PE_HEADER_LEN );
+
 	/* Close output file */
 	xclose ( fd );
 }
