@@ -14,6 +14,12 @@ addons:
     packages:
       - binutils-dev
       - libiberty-dev
+  coverity_scan:
+    project:
+      name: "ipxe/wimboot"
+      version: $TRAVIS_COMMIT
+    build_command: "make -C src wimboot.i386.unsigned wimboot.x86_64.unsigned"
+    branch_pattern: coverity_scan
 
 env:
   global:
