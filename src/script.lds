@@ -67,8 +67,8 @@ SECTIONS {
 
 	/* bootmgr.exe hardcodes the address 0x30000 for use as a
 	 * buffer accessible by real-mode code.  We can't fit our
-	 * code, data, and stack below this region, so explicitly
-	 * place the stack higher in memory.
+	 * .text, .data, and .bss below this region, so explicitly
+	 * place the .bss higher in memory.
 	 */
 	_forbidden_start = 0x30000;
 	_forbidden_end = 0x40000;
@@ -76,14 +76,12 @@ SECTIONS {
 	/* Uninitialised data section */
 	.bss ( NOLOAD ) : {
 		_bss = .;
-		*(.bss)
-		*(.bss.*)
-		*(COMMON)
-
 		ASSERT ( ABSOLUTE ( . ) <= ABSOLUTE ( _forbidden_start ),
 			 "Binary is too large" );
 		. = ABSOLUTE ( _forbidden_end );
-
+		*(.bss)
+		*(.bss.*)
+		*(COMMON)
 		*(.stack)
 		*(.stack.*)
 		. = ALIGN ( alignment );

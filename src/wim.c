@@ -286,9 +286,44 @@ int wim_read ( struct vdisk_file *file, struct wim_header *header,
 }
 
 /**
+ * Get number of images
+ *
+ * @v file		Virtual file
+ * @v header		WIM header
+ * @v count		Count of images to fill in
+ * @ret rc		Return status code
+ */
+int wim_count ( struct vdisk_file *file, struct wim_header *header,
+		unsigned int *count ) {
+	struct wim_lookup_entry entry;
+	size_t offset;
+	int rc;
+
+	/* Count metadata entries */
+	for ( offset = 0 ; ( offset + sizeof ( entry ) ) <= header->lookup.len ;
+	      offset += sizeof ( entry ) ) {
+
+		/* Read entry */
+		if ( ( rc = wim_read ( file, header, &header->lookup, &entry,
+				       offset, sizeof ( entry ) ) ) != 0 )
+			return rc;
+
+		/* Check for metadata entries */
+		if ( entry.resource.zlen__flags & WIM_RESHDR_METADATA ) {
+			(*count)++;
+			DBG2 ( "...found image %d metadata at +%#zx\n",
+			       *count, offset );
+		}
+	}
+
+	return 0;
+}
+
+/**
  * Get WIM image metadata
  *
  * @v file		Virtual file
+ * @v header		WIM header
  * @v index		Image index, or 0 to use boot image
  * @v meta		Metadata to fill in
  * @ret rc		Return status code
@@ -318,8 +353,8 @@ int wim_metadata ( struct vdisk_file *file, struct wim_header *header,
 		/* Look for our target entry */
 		if ( entry.resource.zlen__flags & WIM_RESHDR_METADATA ) {
 			found++;
-			DBG ( "...found image %d metadata at +%#zx\n",
-			      found, offset );
+			DBG2 ( "...found image %d metadata at +%#zx\n",
+			       found, offset );
 			if ( found == index ) {
 				memcpy ( meta, &entry.resource,
 					 sizeof ( *meta ) );
@@ -339,23 +374,23 @@ int wim_metadata ( struct vdisk_file *file, struct wim_header *header,
  * @v file		Virtual file
  * @v header		WIM header
  * @v meta		Metadata
- * @v offset		Directory offset
  * @v name		Name
+ * @v offset		Directory offset (will be updated)
  * @v direntry		Directory entry to fill in
  * @ret rc		Return status code
  */
 static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
-			  struct wim_resource_header *meta, size_t offset,
-			  const wchar_t *name,
+			  struct wim_resource_header *meta,
+			  const wchar_t *name, size_t *offset,
 			  struct wim_directory_entry *direntry ) {
 	wchar_t name_buf[ wcslen ( name ) + 1 /* NUL */ ];
 	int rc;
 
 	/* Search directory */
-	for ( ; ; offset += direntry->len ) {
+	for ( ; ; *offset += direntry->len ) {
 
 		/* Read length field */
-		if ( ( rc = wim_read ( file, header, meta, direntry, offset,
+		if ( ( rc = wim_read ( file, header, meta, direntry, *offset,
 				       sizeof ( direntry->len ) ) ) != 0 )
 			return rc;
 
@@ -366,7 +401,7 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 		}
 
 		/* Read fixed-length portion of directory entry */
-		if ( ( rc = wim_read ( file, header, meta, direntry, offset,
+		if ( ( rc = wim_read ( file, header, meta, direntry, *offset,
 				       sizeof ( *direntry ) ) ) != 0 )
 			return rc;
 
@@ -376,7 +411,7 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 
 		/* Read name */
 		if ( ( rc = wim_read ( file, header, meta, &name_buf,
-				       ( offset + sizeof ( *direntry ) ),
+				       ( *offset + sizeof ( *direntry ) ),
 				       sizeof ( name_buf ) ) ) != 0 )
 			return rc;
 
@@ -387,6 +422,51 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 		DBG2 ( "...found entry \"%ls\"\n", name );
 		return 0;
 	}
+}
+
+/**
+ * Get directory entry for a path
+ *
+ * @v file		Virtual file
+ * @v header		WIM header
+ * @v meta		Metadata
+ * @v path		Path to file/directory
+ * @v offset		Directory entry offset to fill in
+ * @v direntry		Directory entry to fill in
+ * @ret rc		Return status code
+ */
+int wim_path ( struct vdisk_file *file, struct wim_header *header,
+	       struct wim_resource_header *meta, const wchar_t *path,
+	       size_t *offset, struct wim_directory_entry *direntry ) {
+	wchar_t path_copy[ wcslen ( path ) + 1 /* WNUL */ ];
+	struct wim_security_header security;
+	wchar_t *name;
+	wchar_t *next;
+	int rc;
+
+	/* Read security data header */
+	if ( ( rc = wim_read ( file, header, meta, &security, 0,
+			       sizeof ( security ) ) ) != 0 )
+		return rc;
+
+	/* Get root directory offset */
+	direntry->subdir = ( ( security.len + sizeof ( uint64_t ) - 1 ) &
+			     ~( sizeof ( uint64_t ) - 1 ) );
+
+	/* Find directory entry */
+	name = memcpy ( path_copy, path, sizeof ( path_copy ) );
+	do {
+		next = wcschr ( name, L'\\' );
+		if ( next )
+			*next = L'\0';
+		*offset = direntry->subdir;
+		if ( ( rc = wim_direntry ( file, header, meta, name, offset,
+					   direntry ) ) != 0 )
+			return rc;
+		name = ( next + 1 );
+	} while ( next );
+
+	return 0;
 }
 
 /**
@@ -402,36 +482,15 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 int wim_file ( struct vdisk_file *file, struct wim_header *header,
 	       struct wim_resource_header *meta, const wchar_t *path,
 	       struct wim_resource_header *resource ) {
-	wchar_t path_copy[ wcslen ( path ) + 1 /* WNUL */ ];
-	struct wim_security_header security;
 	struct wim_directory_entry direntry;
 	struct wim_lookup_entry entry;
 	size_t offset;
-	wchar_t *name;
-	wchar_t *next;
 	int rc;
 
-	/* Read security data header */
-	if ( ( rc = wim_read ( file, header, meta, &security, 0,
-			       sizeof ( security ) ) ) != 0 )
-		return rc;
-
-	/* Get root directory offset */
-	offset = ( ( security.len + sizeof ( uint64_t ) - 1 ) &
-		    ~( sizeof ( uint64_t ) - 1 ) );
-
 	/* Find directory entry */
-	name = memcpy ( path_copy, path, sizeof ( path_copy ) );
-	do {
-		next = wcschr ( name, L'\\' );
-		if ( next )
-			*next = L'\0';
-		if ( ( rc = wim_direntry ( file, header, meta, offset, name,
-					   &direntry ) ) != 0 )
-			return rc;
-		offset = direntry.subdir;
-		name = ( next + 1 );
-	} while ( next );
+	if ( ( rc = wim_path ( file, header, meta, path, &offset,
+			       &direntry ) ) != 0 )
+		return rc;
 
 	/* File matching file entry */
 	for ( offset = 0 ; ( offset + sizeof ( entry ) ) <= header->lookup.len ;
@@ -454,4 +513,35 @@ int wim_file ( struct vdisk_file *file, struct wim_header *header,
 
 	DBG ( "Cannot find file %ls\n", path );
 	return -1;
+}
+
+/**
+ * Get length of a directory
+ *
+ * @v file		Virtual file
+ * @v header		WIM header
+ * @v meta		Metadata
+ * @v offset		Directory offset
+ * @v len		Directory length to fill in (excluding terminator)
+ * @ret rc		Return status code
+ */
+int wim_dir_len ( struct vdisk_file *file, struct wim_header *header,
+		  struct wim_resource_header *meta, size_t offset,
+		  size_t *len ) {
+	struct wim_directory_entry direntry;
+	int rc;
+
+	/* Search directory */
+	for ( *len = 0 ; ; *len += direntry.len ) {
+
+		/* Read length field */
+		if ( ( rc = wim_read ( file, header, meta, &direntry,
+				       ( offset + *len ),
+				       sizeof ( direntry.len ) ) ) != 0 )
+			return rc;
+
+		/* Check for end of this directory */
+		if ( ! direntry.len )
+			return 0;
+	}
 }

@@ -600,6 +600,8 @@ struct vdisk_file {
 			   size_t len );
 };
 
+extern struct vdisk_file vdisk_files[VDISK_MAX_FILES];
+
 extern void vdisk_read ( uint64_t lba, unsigned int count, void *data );
 extern struct vdisk_file *
 vdisk_add_file ( const char *name, void *opaque, size_t len,

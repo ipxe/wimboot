@@ -28,6 +28,7 @@
  */
 
 extern int cmdline_rawbcd;
+extern int cmdline_rawwim;
 extern int cmdline_gui;
 extern int cmdline_pause;
 extern int cmdline_pause_quiet;

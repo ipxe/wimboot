@@ -32,7 +32,7 @@
 #include "vdisk.h"
 
 /** Virtual files */
-static struct vdisk_file vdisk_files[VDISK_MAX_FILES];
+struct vdisk_file vdisk_files[VDISK_MAX_FILES];
 
 /**
  * Read from virtual Master Boot Record

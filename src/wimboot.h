@@ -62,6 +62,10 @@
 #include <stdint.h>
 #include <bootapp.h>
 
+/** Construct wide-character version of a string constant */
+#define L( x ) _L ( x )
+#define _L( x ) L ## x
+
 /** Page size */
 #define PAGE_SIZE 4096
 

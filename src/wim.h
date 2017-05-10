@@ -166,14 +166,31 @@ struct wim_directory_entry {
 	uint16_t name_len;
 } __attribute__ (( packed ));
 
+/** Normal file */
+#define WIM_ATTR_NORMAL 0x00000080UL
+
+/** No security information exists for this file */
+#define WIM_NO_SECURITY 0xffffffffUL
+
+/** Windows complains if the time fields are left at zero */
+#define WIM_MAGIC_TIME 0x1a7b83d2ad93000ULL
+
 extern int wim_header ( struct vdisk_file *file, struct wim_header *header );
+extern int wim_count ( struct vdisk_file *file, struct wim_header *header,
+		       unsigned int *count );
 extern int wim_metadata ( struct vdisk_file *file, struct wim_header *header,
 			  unsigned int index, struct wim_resource_header *meta);
 extern int wim_read ( struct vdisk_file *file, struct wim_header *header,
 		      struct wim_resource_header *resource, void *data,
 		      size_t offset, size_t len );
+extern int wim_path ( struct vdisk_file *file, struct wim_header *header,
+		      struct wim_resource_header *meta, const wchar_t *path,
+		      size_t *offset, struct wim_directory_entry *direntry );
 extern int wim_file ( struct vdisk_file *file, struct wim_header *header,
 		      struct wim_resource_header *meta, const wchar_t *path,
 		      struct wim_resource_header *resource );
+extern int wim_dir_len ( struct vdisk_file *file, struct wim_header *header,
+			 struct wim_resource_header *meta, size_t offset,
+			 size_t *len );
 
 #endif /* _WIM_H */

@@ -35,6 +35,9 @@
 /** Use raw (unpatched) BCD files */
 int cmdline_rawbcd;
 
+/** Use raw (unpatched) WIM files */
+int cmdline_rawwim;
+
 /** Allow graphical output from bootmgr/bootmgfw */
 int cmdline_gui;
 
@@ -88,6 +91,8 @@ void process_cmdline ( char *cmdline ) {
 		/* Process this argument */
 		if ( strcmp ( key, "rawbcd" ) == 0 ) {
 			cmdline_rawbcd = 1;
+		} else if ( strcmp ( key, "rawwim" ) == 0 ) {
+			cmdline_rawwim = 1;
 		} else if ( strcmp ( key, "gui" ) == 0 ) {
 			cmdline_gui = 1;
 		} else if ( strcmp ( key, "pause" ) == 0 ) {
