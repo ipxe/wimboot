@@ -65,6 +65,14 @@ SECTIONS {
 	_data_len = ABSOLUTE ( _edata ) - ABSOLUTE ( _data );
 	_payload_len = ABSOLUTE ( _epayload ) - ABSOLUTE ( _payload );
 
+	/* bootmgr.exe hardcodes the address 0x30000 for use as a
+	 * buffer accessible by real-mode code.  We can't fit our
+	 * code, data, and stack below this region, so explicitly
+	 * place the stack higher in memory.
+	 */
+	_forbidden_start = 0x30000;
+	_forbidden_end = 0x40000;
+
 	/* Uninitialised data section */
 	.bss ( NOLOAD ) : {
 		_bss = .;
@@ -72,13 +80,9 @@ SECTIONS {
 		*(.bss.*)
 		*(COMMON)
 
-		/* bootmgr.exe hardcodes the address 0x30000 for use
-		 * as a buffer accessible by real-mode code.  We can't
-		 * fit our code, data, and stack below this region, so
-		 * explicitly place the stack higher in memory.
-		 */
-		ASSERT ( ABSOLUTE ( . ) <= 0x30000, "Binary too large" );
-		. = 0x40000;
+		ASSERT ( ABSOLUTE ( . ) <= ABSOLUTE ( _forbidden_start ),
+			 "Binary is too large" );
+		. = ABSOLUTE ( _forbidden_end );
 
 		*(.stack)
 		*(.stack.*)
