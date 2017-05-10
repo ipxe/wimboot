@@ -145,7 +145,7 @@ static void vdisk_fat ( uint64_t lba, unsigned int count, void *data ) {
 	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
 		if ( vdisk_files[i].read ) {
 			file_end_marker = ( VDISK_FILE_CLUSTER ( i ) +
-					    ( ( vdisk_files[i].len - 1 ) /
+					    ( ( vdisk_files[i].xlen - 1 ) /
 					      VDISK_CLUSTER_SIZE ) );
 			if ( ( file_end_marker >= start ) &&
 			     ( file_end_marker < end ) ) {
@@ -409,7 +409,7 @@ static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
 			continue;
 
 		/* Populate directory entry */
-		vdisk_directory_entry ( dirent, file->name, file->len,
+		vdisk_directory_entry ( dirent, file->name, file->xlen,
 					VDISK_READ_ONLY,
 					VDISK_FILE_CLUSTER ( idx ) );
 	}
@@ -428,19 +428,30 @@ static void vdisk_file ( uint64_t lba, unsigned int count, void *data ) {
 	size_t len;
 	size_t copy_len;
 	size_t pad_len;
+	size_t patch_len;
 
 	/* Construct file portion */
 	file = &vdisk_files[ VDISK_FILE_IDX ( lba ) ];
 	offset = VDISK_FILE_OFFSET ( lba );
 	len = ( count * VDISK_SECTOR_SIZE );
+
+	/* Copy any initialised-data portion */
 	copy_len = ( ( offset < file->len ) ? ( file->len - offset ) : 0 );
 	if ( copy_len > len )
 		copy_len = len;
+	if ( copy_len )
+		file->read ( file, data, offset, copy_len );
+
+	/* Zero any uninitialised-data portion */
 	pad_len = ( len - copy_len );
-	file->read ( file, data, offset, copy_len );
-	if ( file->patch )
-		file->patch ( file, data, offset, copy_len );
 	memset ( ( data + copy_len ), 0, pad_len );
+
+	/* Patch any applicable portion */
+	patch_len = ( ( offset < file->xlen ) ? ( file->xlen - offset ) : 0 );
+	if ( patch_len > len )
+		patch_len = len;
+	if ( file->patch )
+		file->patch ( file, data, offset, patch_len );
 }
 
 /** A virtual disk region */
@@ -627,9 +638,27 @@ struct vdisk_file * vdisk_add_file ( const char *name, void *opaque, size_t len,
 	snprintf ( file->name, sizeof ( file->name ), "%s", name );
 	file->opaque = opaque;
 	file->len = len;
+	file->xlen = len;
 	file->read = read;
 	DBG ( "Using %s via %p len %#zx\n", file->name, file->opaque,
 	      file->len );
 
 	return file;
+}
+
+/**
+ * Patch virtual file
+ *
+ * @v file		Virtual file
+ * @v patch		Patch method
+ */
+void vdisk_patch_file ( struct vdisk_file *file,
+			void ( * patch ) ( struct vdisk_file *file, void *data,
+					   size_t offset, size_t len ) ) {
+
+	/* Record patch method */
+	file->patch = patch;
+
+	/* Allow patch method to update file length */
+	patch ( file, NULL, 0, 0 );
 }

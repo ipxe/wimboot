@@ -576,8 +576,10 @@ struct vdisk_file {
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
 	/** Opaque token */
 	void *opaque;
-	/** Length */
+	/** Length (excluding any zero-padding) */
 	size_t len;
+	/** Length (including any zero-padding) */
+	size_t xlen;
 	/** Read data
 	 *
 	 * @v file		Virtual file
@@ -603,5 +605,9 @@ extern struct vdisk_file *
 vdisk_add_file ( const char *name, void *opaque, size_t len,
 		 void ( * read ) ( struct vdisk_file *file, void *data,
 				   size_t offset, size_t len ) );
+extern void
+vdisk_patch_file ( struct vdisk_file *file,
+		   void ( * patch ) ( struct vdisk_file *file, void *data,
+				      size_t offset, size_t len ) );
 
 #endif /* _VDISK_H */

@@ -108,7 +108,7 @@ static void efi_patch_bcd ( struct vdisk_file *vfile __unused, void *data,
 	 * simple cases, this allows the same BCD file to be used for
 	 * both BIOS and UEFI systems.
 	 */
-	for ( i = 0 ; i < ( len - sizeof ( search ) ) ; i++ ) {
+	for ( i = 0 ; ( i + sizeof ( search ) ) < len ; i++ ) {
 		if ( wcscasecmp ( ( data + i ), search ) == 0 ) {
 			memcpy ( ( data + i ), replace, sizeof ( replace ) );
 			DBG ( "...patched BCD at %#zx: \"%ls\" to \"%ls\"\n",
@@ -196,11 +196,11 @@ void efi_extract ( EFI_HANDLE handle ) {
 			bootmgfw = vfile;
 		} else if ( wcscasecmp ( wname, L"BCD" ) == 0 ) {
 			DBG ( "...found BCD\n" );
-			vfile->patch = efi_patch_bcd;
+			vdisk_patch_file ( vfile, efi_patch_bcd );
 		} else if ( wcscasecmp ( ( wname + ( wcslen ( wname ) - 4 ) ),
 					 L".wim" ) == 0 ) {
 			DBG ( "...found WIM file %ls\n", wname );
-			vfile->patch = patch_wim;
+			vdisk_patch_file ( vfile, patch_wim );
 			if ( ( ! bootmgfw ) &&
 			     ( bootmgfw = wim_add_file ( vfile, cmdline_index,
 							 bootmgfw_path,

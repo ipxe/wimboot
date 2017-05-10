@@ -340,7 +340,7 @@ static int add_file ( const char *name, void *data, size_t len ) {
 	} else if ( strcasecmp ( ( name + strlen ( name ) - 4 ),
 				 ".wim" ) == 0 ) {
 		DBG ( "...found WIM file %s\n", name );
-		file->patch = patch_wim;
+		vdisk_patch_file ( file, patch_wim );
 		if ( ( ! bootmgr ) &&
 		     ( bootmgr = wim_add_file ( file, cmdline_index,
 						bootmgr_path,
