@@ -149,7 +149,7 @@ static int wim_chunk ( struct vdisk_file *file, struct wim_header *header,
 	size_t offset;
 	size_t next_offset;
 	size_t len;
-	ssize_t expected_out_len;
+	size_t expected_out_len;
 	ssize_t out_len;
 	int rc;
 
@@ -167,11 +167,17 @@ static int wim_chunk ( struct vdisk_file *file, struct wim_header *header,
 	expected_out_len = ( ( chunk >= ( chunks - 1 ) ) ?
 			     ( resource->len % WIM_CHUNK_LEN ) : WIM_CHUNK_LEN);
 
-	/* Read compressed data into a temporary buffer and decompress it */
-	{
+	/* Read possibly-compressed data */
+	if ( len == expected_out_len ) {
+
+		/* Chunk did not compress; read raw data */
+		file->read ( file, buf->data, ( resource->offset + offset ),
+			     len );
+
+	} else {
 		uint8_t zbuf[len];
 
-		/* Read compressed data */
+		/* Read compressed data into a temporary buffer */
 		file->read ( file, zbuf, ( resource->offset + offset ), len );
 
 		/* Identify decompressor */
@@ -190,8 +196,8 @@ static int wim_chunk ( struct vdisk_file *file, struct wim_header *header,
 		out_len = decompress ( zbuf, len, NULL );
 		if ( out_len < 0 )
 			return out_len;
-		if ( out_len != expected_out_len ) {
-			DBG ( "Unexpected output length %#lx (expected %#lx)\n",
+		if ( ( ( size_t ) out_len ) != expected_out_len ) {
+			DBG ( "Unexpected output length %#lx (expected %#zx)\n",
 			      out_len, expected_out_len );
 			return -1;
 		}
