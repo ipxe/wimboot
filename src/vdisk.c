@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "ctype.h"
 #include "wimboot.h"
 #include "vdisk.h"
@@ -402,6 +403,8 @@ static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
 
 		/* Identify file */
 		idx = VDISK_FILE_DIRENT_IDX ( lba );
+		assert ( idx < ( sizeof ( vdisk_files ) /
+				 sizeof ( vdisk_files[0] ) ) );
 		file = &vdisk_files[idx];
 		if ( ! file->read )
 			continue;
