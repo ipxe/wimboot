@@ -197,8 +197,7 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 	unsigned int i;
 
 	/* Populate directory entry (with invalid 8.3 filename) */
-	memset ( dos->dos.filename, ' ', sizeof ( dos->dos.filename ) );
-	memset ( dos->dos.extension, ' ', sizeof ( dos->dos.extension ) );
+	memset ( dos->dos.filename.raw, ' ', sizeof ( dos->dos.filename.raw ) );
 	dos->dos.attr = attr;
 	dos->dos.size = len;
 	dos->dos.cluster_high = ( cluster >> 16 );
@@ -206,9 +205,8 @@ vdisk_directory_entry ( union vdisk_directory_entry *dirent, const char *name,
 
 	/* Calculate checksum of 8.3 filename */
 	checksum = 0;
-	checksum_data = ( ( uint8_t * ) dos->dos.filename );
-	for ( i = 0 ; i < ( sizeof ( dos->dos.filename ) +
-			    sizeof ( dos->dos.extension ) ) ; i++ ) {
+	checksum_data = dos->dos.filename.raw;
+	for ( i = 0 ; i < sizeof ( dos->dos.filename.raw ) ; i++ ) {
 		checksum = ( ( ( ( checksum & 1 ) << 7 ) |
 			       ( checksum >> 1 ) ) +
 			     *(checksum_data++) );

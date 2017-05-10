@@ -361,9 +361,17 @@ struct vdisk_fsinfo {
 /** An 8.3 filename record */
 struct vdisk_short_filename {
 	/** Filename */
-	char filename[8];
-	/** Extension */
-	char extension[3];
+	union {
+		/** Structured 8.3 base name and extension */
+		struct {
+			/** Base name */
+			char base[8];
+			/** Extension */
+			char ext[3];
+		} __attribute__ (( packed ));
+		/** Raw bytes */
+		uint8_t raw[11];
+	} filename;
 	/** Attributes */
 	uint8_t attr;
 	/** Reserved */
