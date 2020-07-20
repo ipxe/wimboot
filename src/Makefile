@@ -59,6 +59,13 @@ MS_ABI_TEST = $(ECHO) '$(MS_ABI_TEST_CODE)' | \
 MS_ABI_FLAGS := $(shell $(MS_ABI_TEST) || $(ECHO) '-maccumulate-outgoing-args')
 WORKAROUND_CFLAGS += $(MS_ABI_FLAGS)
 
+# Inhibit warnings from taking address of packed struct members
+WNAPM_TEST = $(CC) -Wno-address-of-packed-member -x c -c /dev/null \
+		   -o /dev/null >/dev/null 2>&1
+WNAPM_FLAGS := $(shell $(WNAPM_TEST) && \
+		 $(ECHO) '-Wno-address-of-packed-member')
+WORKAROUND_CFLAGS += $(WNAPM_FLAGS)
+
 CFLAGS += $(WORKAROUND_CFLAGS)
 CFLAGS += $(EXTRA_CFLAGS)
 
