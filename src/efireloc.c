@@ -44,6 +44,14 @@
 
 #define eprintf(...) fprintf ( stderr, __VA_ARGS__ )
 
+/* Maintain compatibility with binutils 2.34 */
+#ifndef bfd_get_section_vma
+#define bfd_get_section_vma(bfd, ptr) bfd_section_vma(ptr)
+#endif
+#ifndef bfd_get_section_flags
+#define bfd_get_section_flags(bfd, ptr) bfd_section_flags(ptr)
+#endif
+
 /** PE header maximum length
  *
  * This maximum length is guaranteed by the fact that the PE headers
