@@ -61,6 +61,7 @@
 
 #include <stdint.h>
 #include <bootapp.h>
+#include <cmdline.h>
 
 /** Construct wide-character version of a string constant */
 #define L( x ) _L ( x )
@@ -110,14 +111,14 @@ static inline void bochsbp ( void ) {
 
 /** Debugging output */
 #define DBG(...) do {						\
-		if ( DEBUG & 1 ) {				\
+		if ( ( DEBUG & 1 ) && ( ! cmdline_quiet ) ) {	\
 			printf ( __VA_ARGS__ );			\
 		}						\
 	} while ( 0 )
 
 /** Verbose debugging output */
 #define DBG2(...) do {						\
-		if ( DEBUG & 2 ) {				\
+		if ( ( DEBUG & 2 ) && ( ! cmdline_quiet ) ) {	\
 			printf ( __VA_ARGS__ );			\
 		}						\
 	} while ( 0 )

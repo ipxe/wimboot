@@ -38,6 +38,9 @@ int cmdline_rawbcd;
 /** Use raw (unpatched) WIM files */
 int cmdline_rawwim;
 
+/** Inhibit debugging output */
+int cmdline_quiet;
+
 /** Allow graphical output from bootmgr/bootmgfw */
 int cmdline_gui;
 
@@ -64,7 +67,6 @@ void process_cmdline ( char *cmdline ) {
 	/* Do nothing if we have no command line */
 	if ( ( cmdline == NULL ) || ( cmdline[0] == '\0' ) )
 		return;
-	DBG ( "Command line: \"%s\"\n", cmdline );
 
 	/* Parse command line */
 	while ( *tmp ) {
@@ -95,6 +97,8 @@ void process_cmdline ( char *cmdline ) {
 			cmdline_rawwim = 1;
 		} else if ( strcmp ( key, "gui" ) == 0 ) {
 			cmdline_gui = 1;
+		} else if ( strcmp ( key, "quiet" ) == 0 ) {
+			cmdline_quiet = 1;
 		} else if ( strcmp ( key, "pause" ) == 0 ) {
 			cmdline_pause = 1;
 			if ( value && ( strcmp ( value, "quiet" ) == 0 ) )
@@ -116,4 +120,7 @@ void process_cmdline ( char *cmdline ) {
 			      ( value ? "=" : "" ), ( value ? value : "" ) );
 		}
 	}
+
+	/* Show command line (after parsing "quiet" option) */
+	DBG ( "Command line: \"%s\"\n", cmdline );
 }
