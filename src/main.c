@@ -363,7 +363,7 @@ int main ( void ) {
 
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
-		 "bootloader -- http://ipxe.org/wimboot\n\n" );
+		 "bootloader -- https://ipxe.org/wimboot\n\n" );
 
 	/* Process command line */
 	process_cmdline ( cmdline );

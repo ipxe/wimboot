@@ -1,4 +1,4 @@
 wimboot -- Windows Imaging Format bootloader
 ============================================
 
-See http://ipxe.org/wimboot for instructions.
+See https://ipxe.org/wimboot for instructions.
