@@ -3,7 +3,7 @@ VERSION := v2.6.0
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o die.o efi.o efimain.o
 OBJECTS += efiguid.o efifile.o efipath.o efiboot.o efiblock.o cmdline.o
-OBJECTS += wimpatch.o huffman.o lzx.o wim.o wimfile.o pause.o sha1.o
+OBJECTS += wimpatch.o huffman.o lzx.o wim.o wimfile.o pause.o sha1.o cookie.o
 
 OBJECTS_i386 := $(patsubst %.o,%.i386.o,$(OBJECTS))
 OBJECTS_x86_64 := $(patsubst %.o,%.x86_64.o,$(OBJECTS))
@@ -35,11 +35,13 @@ CFLAGS += -DVERSION="\"$(VERSION)\""
 CFLAGS_i386 += -m32 -march=i386 -malign-double -fno-pic
 CFLAGS_x86_64 += -m64 -mno-red-zone -fpie
 
-# Inhibit -fno-stack-protector
-SP_TEST = $(CC) -fno-stack-protector -x c -c /dev/null \
-                -o /dev/null >/dev/null 2>&1
-SP_FLAGS := $(shell $(SP_TEST) && $(ECHO) '-fno-stack-protector')
-WORKAROUND_CFLAGS += $(SP_FLAGS)
+# Enable stack protection if available
+#
+SPG_TEST = $(CC) -fstack-protector-strong -mstack-protector-guard=global \
+		 -x c -c /dev/null -o /dev/null >/dev/null 2>&1
+SPG_FLAGS := $(shell $(SPG_TEST) && $(ECHO) '-fstack-protector-strong ' \
+					    '-mstack-protector-guard=global')
+CFLAGS += $(SPG_FLAGS)
 
 # Inhibit unwanted debugging information
 CFI_TEST = $(CC) -fno-dwarf2-cfi-asm -fno-exceptions -fno-unwind-tables \

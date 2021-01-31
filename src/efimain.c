@@ -72,6 +72,9 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 	efi_systab = systab;
 	bs = systab->BootServices;
 
+	/* Initialise stack cookie */
+	init_cookie();
+
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
 		 "bootloader -- https://ipxe.org/wimboot\n\n" );

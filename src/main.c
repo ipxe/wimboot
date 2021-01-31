@@ -361,6 +361,9 @@ int main ( void ) {
 	void *raw_pe;
 	struct loaded_pe pe;
 
+	/* Initialise stack cookie */
+	init_cookie();
+
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
 		 "bootloader -- https://ipxe.org/wimboot\n\n" );

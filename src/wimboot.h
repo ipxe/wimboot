@@ -151,6 +151,9 @@ extern void __attribute__ (( noreturn )) reboot ( void );
 extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))
 die ( const char *fmt, ... );
 
+extern unsigned long __stack_chk_guard;
+extern void init_cookie ( void );
+
 #endif /* ASSEMBLY */
 
 #endif /* _WIMBOOT_H */
