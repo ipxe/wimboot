@@ -422,11 +422,11 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 	if ( nt->Pe32.FileHeader.Machine == EFI_IMAGE_MACHINE_IA32 ) {
 		image_size = &nt->Pe32.OptionalHeader.SizeOfImage;
 		data_dir = nt->Pe32.OptionalHeader.DataDirectory;
-		pe_sections = ( ( void * ) ( &nt->Pe32 + 1 ) );
+		pe_sections = ( ( ( void * ) nt ) + sizeof ( nt->Pe32 ) );
 	} else if ( nt->Pe32Plus.FileHeader.Machine == EFI_IMAGE_MACHINE_X64 ) {
 		image_size = &nt->Pe32Plus.OptionalHeader.SizeOfImage;
 		data_dir = nt->Pe32Plus.OptionalHeader.DataDirectory;
-		pe_sections = ( ( void * ) ( &nt->Pe32Plus + 1 ) );
+		pe_sections = ( ( ( void * ) nt ) + sizeof ( nt->Pe32Plus ) );
 	} else {
 		eprintf ( "Unrecognised machine type\n" );
 		exit ( 1 );
