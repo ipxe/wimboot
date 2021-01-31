@@ -66,6 +66,11 @@ WNAPM_FLAGS := $(shell $(WNAPM_TEST) && \
 		 $(ECHO) '-Wno-address-of-packed-member')
 WORKAROUND_CFLAGS += $(WNAPM_FLAGS)
 
+# Inhibit LTO
+LTO_TEST = $(CC) -fno-lto -x c -c /dev/null -o /dev/null >/dev/null 2>&1
+LTO_FLAGS := $(shell $(LTO_TEST) && $(ECHO) '-fno-lto')
+WORKAROUND_CFLAGS += $(LTO_FLAGS)
+
 CFLAGS += $(WORKAROUND_CFLAGS)
 CFLAGS += $(EXTRA_CFLAGS)
 
