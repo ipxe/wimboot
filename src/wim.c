@@ -33,14 +33,8 @@
 #include "lzx.h"
 #include "wim.h"
 
-/**
- * WIM chunk buffer
- *
- * We place this in the .stack section to avoid crossing the Forbidden
- * Threshold at 0x30000.  (See comments in script.lds.)
- */
-static struct wim_chunk_buffer wim_chunk_buffer
-	__attribute__ (( section ( ".stack" ) ));
+/** WIM chunk buffer */
+static struct wim_chunk_buffer wim_chunk_buffer;
 
 /**
  * Get WIM header
