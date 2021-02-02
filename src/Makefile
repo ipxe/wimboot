@@ -179,7 +179,7 @@ efireloc : efireloc.c Makefile
 # Cleanup
 
 clean :
-	$(RM) -f *.s *.o *.a *.elf
+	$(RM) -f *.s *.o *.a *.elf *.map
 	$(RM) -f efireloc
 	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
 	$(RM) -f wimboot.i386.unsigned wimboot.x86_64.unsigned
