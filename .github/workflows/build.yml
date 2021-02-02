@@ -1,0 +1,21 @@
+name: Build
+
+on: push
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt install -y -o Acquire::Retries=50 \
+                           binutils-dev libiberty-dev pesign gcab
+      - name: Build
+        working-directory: src
+        run: |
+          make
