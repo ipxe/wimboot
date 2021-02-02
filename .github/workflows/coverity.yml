@@ -1,0 +1,46 @@
+name: Coverity Scan
+
+on:
+  push:
+    branches:
+      - coverity_scan
+  schedule:
+    - cron: '30 1 * * *'
+
+jobs:
+  submit:
+    name: Submit
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt install -y -o Acquire::Retries=50 \
+                           binutils-dev libiberty-dev pesign gcab
+      - name: Download Coverity Scan
+        run: |
+          curl --form token=${{ secrets.COVERITY_SCAN_TOKEN }} \
+               --form project=${{ github.repository }} \
+               --output coverity.tar.gz \
+               https://scan.coverity.com/download/cxx/linux64
+          mkdir -p /opt/coverity
+          sudo tar xvzf coverity.tar.gz --strip 1 --directory /opt/coverity
+      - name: Build via Coverity Scan
+        working-directory: src
+        run: |
+          /opt/coverity/bin/cov-build --dir cov-int make
+      - name: Create submission
+        working-directory: src
+        run : |
+          tar cvzf cov-int.tar.gz cov-int
+      - name: Submit to Coverity Scan
+        working-directory: src
+        run: |
+          curl --form token=${{ secrets.COVERITY_SCAN_TOKEN }} \
+               --form email=${{ secrets.COVERITY_SCAN_EMAIL }} \
+               --form file=@cov-int.tar.gz \
+               --form version=${{ github.sha }} \
+               --form description=${{ github.ref }} \
+               https://scan.coverity.com/builds?project=${{ github.repository }}
