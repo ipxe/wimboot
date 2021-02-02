@@ -33,6 +33,7 @@ extern int cmdline_quiet;
 extern int cmdline_gui;
 extern int cmdline_pause;
 extern int cmdline_pause_quiet;
+extern int cmdline_linear;
 extern unsigned int cmdline_index;
 extern void process_cmdline ( char *cmdline );
 

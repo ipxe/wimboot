@@ -50,6 +50,9 @@ int cmdline_pause;
 /** Pause without displaying any prompt */
 int cmdline_pause_quiet;
 
+/** Use linear (unpaged) memory model */
+int cmdline_linear;
+
 /** WIM boot index */
 unsigned int cmdline_index;
 
@@ -97,6 +100,8 @@ void process_cmdline ( char *cmdline ) {
 			cmdline_rawwim = 1;
 		} else if ( strcmp ( key, "gui" ) == 0 ) {
 			cmdline_gui = 1;
+		} else if ( strcmp ( key, "linear" ) == 0 ) {
+			cmdline_linear = 1;
 		} else if ( strcmp ( key, "quiet" ) == 0 ) {
 			cmdline_quiet = 1;
 		} else if ( strcmp ( key, "pause" ) == 0 ) {

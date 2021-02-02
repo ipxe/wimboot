@@ -41,6 +41,7 @@
 #include "wimpatch.h"
 #include "wimfile.h"
 #include "pause.h"
+#include "paging.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -80,13 +81,20 @@ enum {
  * @v params		Parameters
  */
 static void call_interrupt_wrapper ( struct bootapp_callback_params *params ) {
+	struct paging_state state;
 	uint16_t *attributes;
 
 	/* Handle/modify/pass-through interrupt as required */
 	if ( params->vector.interrupt == 0x13 ) {
 
+		/* Enable paging */
+		enable_paging ( &state );
+
 		/* Intercept INT 13 calls for the emulated drive */
 		emulate_int13 ( params );
+
+		/* Disable paging */
+		disable_paging ( &state );
 
 	} else if ( ( params->vector.interrupt == 0x10 ) &&
 		    ( params->ax == 0x4f01 ) &&
@@ -360,6 +368,7 @@ int main ( void ) {
 	size_t padded_len;
 	void *raw_pe;
 	struct loaded_pe pe;
+	struct paging_state state;
 
 	/* Initialise stack cookie */
 	init_cookie();
@@ -370,6 +379,12 @@ int main ( void ) {
 
 	/* Process command line */
 	process_cmdline ( cmdline );
+
+	/* Initialise paging */
+	init_paging();
+
+	/* Enable paging */
+	enable_paging ( &state );
 
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
@@ -405,6 +420,9 @@ int main ( void ) {
 	bootapps.regions[INITRD_REGION].start_page = page_start ( initrd );
 	bootapps.regions[INITRD_REGION].num_pages =
 		page_len ( initrd, initrd + initrd_len );
+
+	/* Disable paging */
+	disable_paging ( &state );
 
 	/* Jump to PE image */
 	DBG ( "Entering bootmgr.exe with parameters at %p\n", &bootapps );
