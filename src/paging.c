@@ -24,11 +24,16 @@
  *
  */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include "wimboot.h"
 #include "paging.h"
+
+/** Virtual address used as a 2MB window during relocation */
+#define COPY_WINDOW 0x200000
 
 /** Paging is available */
 int paging;
@@ -38,6 +43,9 @@ static uint64_t pdpt[4] __attribute__ (( aligned ( PAGE_SIZE ) ));
 
 /** Page directories */
 static uint64_t pd[2048] __attribute__ (( aligned ( PAGE_SIZE ) ));
+
+/** Buffer for INT 15,e820 calls */
+static struct e820_entry e820buf __attribute__ (( section ( ".bss16" ) ));
 
 /**
  * Check that paging can be supported
@@ -175,4 +183,113 @@ void disable_paging ( struct paging_state *state ) {
 			       "mov %1, %%cr3\n\t"
 			       "mov %0, %%cr0\n\t"
 			       : : "r" ( cr0 ), "r" ( cr3 ), "r" ( cr4 ) );
+}
+
+/**
+ * Relocate data out of 32-bit address space, if possible
+ *
+ * @v data		Start of data
+ * @v len		Length of data
+ * @ret start		Physical start address
+ */
+uint64_t relocate_memory ( void *data, size_t len ) {
+	intptr_t end = ( ( ( intptr_t ) data ) + len );
+	struct bootapp_callback_params params;
+	uint64_t start;
+	uint64_t dest;
+	size_t offset;
+	size_t frag_len;
+
+	/* Do nothing if paging is unavailable */
+	if ( ! paging )
+		return ( ( intptr_t ) data );
+
+	/* Read system memory map */
+	memset ( &e820buf, 0, sizeof ( e820buf ) );
+	memset ( &params, 0, sizeof ( params ) );
+	do {
+
+		/* Call INT 15,e820 */
+		params.vector.interrupt = 0x15;
+		params.eax = 0xe820;
+		params.ecx = sizeof ( e820buf );
+		params.edx = E820_SMAP;
+		params.es = BASE_SEG;
+		params.edi = ( ( ( void * ) &e820buf ) -
+			       ( ( void * ) BASE_ADDRESS ) );
+		call_interrupt ( &params );
+
+		/* Check result */
+		if ( params.eflags & CF ) {
+			DBG ( "INT 15,e820 failed: error %02x\n", params.ah );
+			break;
+		}
+		if ( params.eax != E820_SMAP ) {
+			DBG ( "INT 15,e820 invalid SMAP signature %08x\n",
+			      params.eax );
+			break;
+		}
+		DBG2 ( "INT 15,e820 region [%llx,%llx) type %d\n",
+		       e820buf.start, ( e820buf.start + e820buf.len ),
+		       e820buf.type );
+
+		/* Skip non-RAM regions */
+		if ( e820buf.type != E820_TYPE_RAM )
+			continue;
+		if ( params.ecx > offsetof ( typeof ( e820buf ), attrs ) ) {
+			if ( ! ( e820buf.attrs & E820_ATTR_ENABLED ) )
+				continue;
+			if ( e820buf.attrs & E820_ATTR_NONVOLATILE )
+				continue;
+		}
+
+		/* Find highest compatible placement within this region */
+		start = ( e820buf.start + e820buf.len );
+		if ( start < ADDR_4GB )
+			continue;
+		start = ( ( ( start - end ) & ~( PAGE_SIZE_2MB - 1 ) ) + end );
+		start -= len;
+		if ( start < e820buf.start )
+			continue;
+		if ( start < ADDR_4GB )
+			continue;
+
+		/* Relocate to this region */
+		dest = start;
+		while ( len ) {
+
+			/* Calculate length within this 2MB page */
+			offset = ( ( ( intptr_t ) data ) &
+				   ( PAGE_SIZE_2MB - 1 ) );
+			frag_len = ( PAGE_SIZE_2MB - offset );
+			if ( frag_len > len )
+				frag_len = len;
+
+			/* Map copy window to destination */
+			map_page ( COPY_WINDOW,
+				   ( dest & ~( PAGE_SIZE_2MB - 1 ) ) );
+
+			/* Copy data through copy window */
+			memcpy ( ( ( ( void * ) COPY_WINDOW ) + offset ),
+				 data, frag_len );
+
+			/* Map original page to destination */
+			map_page ( ( ( ( intptr_t ) data ) - offset ),
+				   ( dest & ~( PAGE_SIZE_2MB - 1 ) ) );
+
+			/* Move to next 2MB page */
+			data += frag_len;
+			dest += frag_len;
+			len -= frag_len;
+		}
+
+		/* Remap copy window */
+		map_page ( COPY_WINDOW, COPY_WINDOW );
+
+		return start;
+
+	} while ( params.ebx != 0 );
+
+	/* Leave at original location */
+	return ( ( intptr_t ) data );
 }
