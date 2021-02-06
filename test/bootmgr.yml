@@ -1,0 +1,8 @@
+name: Test bootmgr.exe extraction
+version: win7
+arch: x64
+bootmgr: true
+logcheck:
+  - "found bootmgr"
+  - "extracting embedded bootmgr.exe"
+  - "Using bootmgr.exe"

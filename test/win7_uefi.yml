@@ -1,0 +1,4 @@
+name: Windows 7 (UEFI)
+version: win7
+arch: x64
+uefi: true
