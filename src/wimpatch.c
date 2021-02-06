@@ -236,18 +236,18 @@ static int wim_patch_header ( struct wim_patch *patch,
 
 	/* Copy patched header */
 	if ( patch->lookup.offset != patch->header.lookup.offset ) {
-		DBG ( "...patched WIM %s lookup table %#llx->%#llx\n",
-		      region->name, patch->lookup.offset,
-		      patch->header.lookup.offset );
+		DBG2 ( "...patched WIM %s lookup table %#llx->%#llx\n",
+		       region->name, patch->lookup.offset,
+		       patch->header.lookup.offset );
 	}
 	if ( patch->boot.offset != patch->header.boot.offset ) {
-		DBG ( "...patched WIM %s boot metadata %#llx->%#llx\n",
-		      region->name, patch->boot.offset,
-		      patch->header.boot.offset );
+		DBG2 ( "...patched WIM %s boot metadata %#llx->%#llx\n",
+		       region->name, patch->boot.offset,
+		       patch->header.boot.offset );
 	}
 	if ( patch->boot_index != patch->header.boot_index ) {
-		DBG ( "...patched WIM %s boot index %d->%d\n", region->name,
-		      patch->boot_index, patch->header.boot_index );
+		DBG2 ( "...patched WIM %s boot index %d->%d\n", region->name,
+		       patch->boot_index, patch->header.boot_index );
 	}
 	memcpy ( data, ( ( ( void * ) &patch->header ) + offset ), len );
 
@@ -359,7 +359,7 @@ static int wim_patch_lookup_file ( struct wim_patch *patch __unused,
 
 	/* Copy lookup table entry */
 	memcpy ( data, ( ( ( void * ) &entry ) + offset ), len );
-	DBG ( "...patched WIM %s %s\n", region->name, vfile->name );
+	DBG2 ( "...patched WIM %s %s\n", region->name, vfile->name );
 
 	return 0;
 }
@@ -409,8 +409,8 @@ static int wim_patch_dir_subdir ( struct wim_patch *patch,
 
 	/* Copy subdirectory offset */
 	memcpy ( data, ( ( ( void * ) &subdir ) + offset ), len );
-	DBG ( "...patched WIM %s %s %#llx\n", region->name, dir->name,
-	      ( patch->header.boot.offset + subdir ) );
+	DBG2 ( "...patched WIM %s %s %#llx\n", region->name, dir->name,
+	       ( patch->header.boot.offset + subdir ) );
 
 	return 0;
 }
@@ -477,7 +477,7 @@ static int wim_patch_dir_file ( struct wim_patch *patch __unused,
 
 	/* Copy directory entry */
 	memcpy ( data, ( ( ( void * ) &entry ) + offset ), len );
-	DBG ( "...patched WIM %s %s\n", region->name, vfile->name );
+	DBG2 ( "...patched WIM %s %s\n", region->name, vfile->name );
 
 	return 0;
 }
