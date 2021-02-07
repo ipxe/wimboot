@@ -1,0 +1,115 @@
+name: QA
+
+on:
+  push:
+    branches:
+      - qa
+  schedule:
+    - cron: '15 22 * * *'
+
+jobs:
+
+  secrets:
+    name: Secrets check
+    runs-on: ubuntu-20.04
+    env:
+      IMAGES_RSYNC_URI: ${{ secrets.IMAGES_RSYNC_URI }}
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+
+      - name: Check secret presence
+        id: check
+        if: ${{ env.IMAGES_RSYNC_URI != null }}
+        run: |
+          echo "::set-output name=present::true"
+
+  cache:
+    name: Image cache
+    runs-on: ubuntu-20.04
+    needs: secrets
+    if: needs.secrets.outputs.present
+    outputs:
+      hash: ${{ steps.key.outputs.hash }}
+    steps:
+
+      - name: SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/known_hosts <<< "${{ secrets.IMAGES_SSH_KNOWN_HOSTS }}"
+
+      - name: SSH agent
+        run: |
+          eval $(ssh-agent)
+          echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}" >> ${GITHUB_ENV}
+          echo "SSH_AGENT_PID=${SSH_AGENT_PID}" >> ${GITHUB_ENV}
+          ssh-add -q - <<< "${{ secrets.IMAGES_SSH_KEY }}"
+
+      - name: List images
+        run: |
+          mkdir -p test/images
+          rsync -rt "${{ secrets.IMAGES_RSYNC_URI }}" > .rsync.list
+
+      - name: Construct cache key
+        id: key
+        run: |
+          echo "::set-output name=hash::${{ hashFiles('.rsync.list') }}"
+
+      - name: Cache images
+        uses: actions/cache@v2
+        with:
+          path: test/images
+          key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ steps.key.outputs.hash }}
+          restore-keys: |
+            ${{ secrets.IMAGES_CACHE_KEY }}-
+
+      - name: Update images
+        run: |
+          rsync -rtv --progress --delete \
+                "${{ secrets.IMAGES_RSYNC_URI }}" test/images/
+
+      - name: Kill SSH agent
+        if: ${{ always() }}
+        run: |
+          ssh-agent -k
+
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+    needs: cache
+    if: ${{ github.event_name == 'push' }}
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt install -y -o Acquire::Retries=50 \
+                           binutils-dev libiberty-dev pesign gcab \
+                           qemu-system-x86 ovmf \
+                           python3-libvirt python3-lxml python3-pil \
+                           python3-qrcode python3-yaml python3-zbar
+
+      - name: Build
+        working-directory: src
+        run: |
+          make
+
+      - name: Fetch images
+        uses: actions/cache@v2
+        with:
+          path: test/images
+          key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ needs.cache.outputs.hash }}
+
+      - name: Run tests
+        run: |
+          make -C test -j $(nproc) ARGS="-vv -r images/e1000.rom -t 180"
+
+      - name: Upload outputs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: qa.zip
+          path: test/out/*
