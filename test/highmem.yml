@@ -1,4 +1,4 @@
-name: Windows 7
+name: Windows 7 (High RAM)
 version: win7
 arch: x64
 memory: 5120
