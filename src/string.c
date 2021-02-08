@@ -58,6 +58,55 @@ void * memcpy ( void *dest, const void *src, size_t len ) {
 }
 
 /**
+ * Copy memory area backwards
+ *
+ * @v dest		Destination address
+ * @v src		Source address
+ * @v len		Length
+ * @ret dest		Destination address
+ */
+static void * memcpy_reverse ( void *dest, const void *src, size_t len ) {
+	void *edi = ( dest + len - 1 );
+	const void *esi = ( src + len - 1 );
+	int discard_ecx;
+
+	/* Assume memmove() is not performance-critical, and perform a
+	 * bytewise copy for simplicity.
+	 *
+	 * Disable interrupts to avoid known problems on platforms
+	 * that assume the direction flag always remains cleared.
+	 */
+	__asm__ __volatile__ ( "pushf\n\t"
+			       "cli\n\t"
+			       "std\n\t"
+			       "rep movsb\n\t"
+			       "popf\n\t"
+			       : "=&D" ( edi ), "=&S" ( esi ),
+				 "=&c" ( discard_ecx )
+			       : "0" ( edi ), "1" ( esi ),
+				 "2" ( len )
+			       : "memory" );
+	return dest;
+}
+
+/**
+ * Copy (possibly overlapping) memory area
+ *
+ * @v dest		Destination address
+ * @v src		Source address
+ * @v len		Length
+ * @ret dest		Destination address
+ */
+void * memmove ( void *dest, const void *src, size_t len ) {
+
+	if ( dest <= src ) {
+		return memcpy ( dest, src, len );
+	} else {
+		return memcpy_reverse ( dest, src, len );
+	}
+}
+
+/**
  * Set memory area
  *
  * @v dest		Destination address
