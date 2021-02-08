@@ -189,7 +189,7 @@ void disable_paging ( struct paging_state *state ) {
  * @v len		Length of data
  * @ret start		Physical start address
  */
-uint64_t relocate_memory ( void *data, size_t len ) {
+uint64_t relocate_memory_high ( void *data, size_t len ) {
 	intptr_t end = ( ( ( intptr_t ) data ) + len );
 	struct e820_entry *e820 = NULL;
 	uint64_t start;

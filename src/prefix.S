@@ -243,7 +243,7 @@ cmd_line_ptr:
 
 	.org	0x22c
 ramdisk_max:
-	.long	0x7fffffff
+	.long	0xffffffff
 
 version_string:
 	.asciz	VERSION

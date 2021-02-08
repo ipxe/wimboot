@@ -42,6 +42,7 @@
 #include "wimfile.h"
 #include "pause.h"
 #include "paging.h"
+#include "memmap.h"
 
 /** Start of our image (defined by linker) */
 extern char _start[];
@@ -66,6 +67,9 @@ static struct vdisk_file *bootmgr;
 
 /** Minimal length of embedded bootmgr.exe */
 #define BOOTMGR_MIN_LEN 16384
+
+/** 2GB memory threshold */
+#define ADDR_2GB 0x80000000
 
 /** Memory regions */
 enum {
@@ -361,6 +365,40 @@ static int add_file ( const char *name, void *data, size_t len ) {
 }
 
 /**
+ * Relocate data below 2GB if possible
+ *
+ * @v data		Start of data
+ * @v len		Length of data
+ * @ret start		Start address
+ */
+static void * relocate_memory_low ( void *data, size_t len ) {
+	struct e820_entry *e820 = NULL;
+	uint64_t end;
+	intptr_t start;
+
+	/* Read system memory map */
+	while ( ( e820 = memmap_next ( e820 ) ) != NULL ) {
+
+		/* Find highest compatible placement within this region */
+		end = ( e820->start + e820->len );
+		start = ( ( end > ADDR_2GB ) ? ADDR_2GB : end );
+		if ( start < len )
+			continue;
+		start -= len;
+		start &= ~( PAGE_SIZE - 1 );
+		if ( start < e820->start )
+			continue;
+
+		/* Relocate to this region */
+		memmove ( ( void * ) start, data, len );
+		return ( ( void * ) start );
+	}
+
+	/* Leave at original location */
+	return data;
+}
+
+/**
  * Main entry point
  *
  */
@@ -387,6 +425,11 @@ int main ( void ) {
 	/* Enable paging */
 	enable_paging ( &state );
 
+	/* Relocate initrd below 2GB if possible, to avoid collisions */
+	DBG ( "Found initrd at [%p,%p)\n", initrd, ( initrd + initrd_len ) );
+	initrd = relocate_memory_low ( initrd, initrd_len );
+	DBG ( "Placing initrd at [%p,%p)\n", initrd, ( initrd + initrd_len ) );
+
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
 		die ( "FATAL: could not extract initrd files\n" );
@@ -410,11 +453,10 @@ int main ( void ) {
 	if ( load_pe ( raw_pe, bootmgr->len, &pe ) != 0 )
 		die ( "FATAL: Could not load bootmgr.exe\n" );
 
-	/* Relocate initrd */
-	initrd_phys = relocate_memory ( initrd, initrd_len );
-	DBG ( "Placing initrd at [%p,%p) phys [%#llx,%#llx)\n",
-	      initrd, ( initrd + initrd_len ), initrd_phys,
-	      ( initrd_phys + initrd_len ) );
+	/* Relocate initrd above 4GB if possible, to free up 32-bit memory */
+	initrd_phys = relocate_memory_high ( initrd, initrd_len );
+	DBG ( "Placing initrd at physical [%#llx,%#llx)\n",
+	      initrd_phys, ( initrd_phys + initrd_len ) );
 
 	/* Complete boot application descriptor set */
 	bootapps.bootapp.pe_base = pe.base;

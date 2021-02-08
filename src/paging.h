@@ -74,6 +74,6 @@ extern int paging;
 extern void init_paging ( void );
 extern void enable_paging ( struct paging_state *state );
 extern void disable_paging ( struct paging_state *state );
-extern uint64_t relocate_memory ( void *start, size_t len );
+extern uint64_t relocate_memory_high ( void *start, size_t len );
 
 #endif /* _PAGING_H */
