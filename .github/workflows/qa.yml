@@ -111,5 +111,5 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: qa.zip
+          name: qa-results
           path: test/out/*
