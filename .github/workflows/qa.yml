@@ -2,8 +2,6 @@ name: QA
 
 on:
   push:
-    branches:
-      - qa
   schedule:
     - cron: '15 22 * * *'
 
