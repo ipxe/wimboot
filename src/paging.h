@@ -27,7 +27,7 @@
  *
  */
 
-#include <stdint.h>
+#include <stddef.h>
 
 /** Get CPU features */
 #define CPUID_FEATURES 0x00000001
@@ -68,30 +68,6 @@ struct paging_state {
 	/** Control register 4 */
 	unsigned long cr4;
 };
-
-/** Magic value for INT 15,e820 calls */
-#define E820_SMAP 0x534d4150
-
-/** An INT 15,e820 memory map entry */
-struct e820_entry {
-	/** Start of region */
-	uint64_t start;
-	/** Length of region */
-	uint64_t len;
-	/** Type of region */
-	uint32_t type;
-	/** Extended attributes (optional) */
-	uint32_t attrs;
-} __attribute__ (( packed ));
-
-/** Normal RAM */
-#define E820_TYPE_RAM 1
-
-/** Region is enabled (if extended attributes are present) */
-#define E820_ATTR_ENABLED 0x00000001UL
-
-/** Region is non-volatile memory (if extended attributes are present) */
-#define E820_ATTR_NONVOLATILE 0x00000002UL
 
 extern int paging;
 

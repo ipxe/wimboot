@@ -24,12 +24,12 @@
  *
  */
 
-#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include "wimboot.h"
+#include "memmap.h"
 #include "paging.h"
 
 /** Virtual address used as a 2MB window during relocation */
@@ -43,9 +43,6 @@ static uint64_t pdpt[4] __attribute__ (( aligned ( PAGE_SIZE ) ));
 
 /** Page directories */
 static uint64_t pd[2048] __attribute__ (( aligned ( PAGE_SIZE ) ));
-
-/** Buffer for INT 15,e820 calls */
-static struct e820_entry e820buf __attribute__ (( section ( ".bss16" ) ));
 
 /**
  * Check that paging can be supported
@@ -194,7 +191,7 @@ void disable_paging ( struct paging_state *state ) {
  */
 uint64_t relocate_memory ( void *data, size_t len ) {
 	intptr_t end = ( ( ( intptr_t ) data ) + len );
-	struct bootapp_callback_params params;
+	struct e820_entry *e820 = NULL;
 	uint64_t start;
 	uint64_t dest;
 	size_t offset;
@@ -205,51 +202,15 @@ uint64_t relocate_memory ( void *data, size_t len ) {
 		return ( ( intptr_t ) data );
 
 	/* Read system memory map */
-	memset ( &e820buf, 0, sizeof ( e820buf ) );
-	memset ( &params, 0, sizeof ( params ) );
-	do {
-
-		/* Call INT 15,e820 */
-		params.vector.interrupt = 0x15;
-		params.eax = 0xe820;
-		params.ecx = sizeof ( e820buf );
-		params.edx = E820_SMAP;
-		params.es = BASE_SEG;
-		params.edi = ( ( ( void * ) &e820buf ) -
-			       ( ( void * ) BASE_ADDRESS ) );
-		call_interrupt ( &params );
-
-		/* Check result */
-		if ( params.eflags & CF ) {
-			DBG ( "INT 15,e820 failed: error %02x\n", params.ah );
-			break;
-		}
-		if ( params.eax != E820_SMAP ) {
-			DBG ( "INT 15,e820 invalid SMAP signature %08x\n",
-			      params.eax );
-			break;
-		}
-		DBG2 ( "INT 15,e820 region [%llx,%llx) type %d\n",
-		       e820buf.start, ( e820buf.start + e820buf.len ),
-		       e820buf.type );
-
-		/* Skip non-RAM regions */
-		if ( e820buf.type != E820_TYPE_RAM )
-			continue;
-		if ( params.ecx > offsetof ( typeof ( e820buf ), attrs ) ) {
-			if ( ! ( e820buf.attrs & E820_ATTR_ENABLED ) )
-				continue;
-			if ( e820buf.attrs & E820_ATTR_NONVOLATILE )
-				continue;
-		}
+	while ( ( e820 = memmap_next ( e820 ) ) != NULL ) {
 
 		/* Find highest compatible placement within this region */
-		start = ( e820buf.start + e820buf.len );
+		start = ( e820->start + e820->len );
 		if ( start < ADDR_4GB )
 			continue;
 		start = ( ( ( start - end ) & ~( PAGE_SIZE_2MB - 1 ) ) + end );
 		start -= len;
-		if ( start < e820buf.start )
+		if ( start < e820->start )
 			continue;
 		if ( start < ADDR_4GB )
 			continue;
@@ -287,8 +248,7 @@ uint64_t relocate_memory ( void *data, size_t len ) {
 		map_page ( COPY_WINDOW, COPY_WINDOW );
 
 		return start;
-
-	} while ( params.ebx != 0 );
+	}
 
 	/* Leave at original location */
 	return ( ( intptr_t ) data );
