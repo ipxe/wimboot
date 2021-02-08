@@ -1,0 +1,6 @@
+name: Windows 7
+version: win7
+arch: x64
+memory: 5120
+logcheck:
+  - 'Placing initrd at .* phys \[0x[1-9a-f][0-9a-f]{8,},'
