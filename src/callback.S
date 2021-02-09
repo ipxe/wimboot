@@ -220,7 +220,7 @@ rm_idtr:
 
 	/* Real-mode stack */
 	.section ".stack16", "aw", @nobits
-	.align	8
+	.balign	8
 _rmstack:
 	.space	8192
 	.size	_rmstack, . - _rmstack
