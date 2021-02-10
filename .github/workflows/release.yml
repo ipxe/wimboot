@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - 'v*-signed'
+
+jobs:
+
+  release:
+    name: Update release
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Identify release
+        id: create_release
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '')
+            const tag = branch.replace('-signed', '')
+            const release = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tag,
+            })
+            console.log(release)
+            core.setOutput('upload_url', release.data.upload_url)
+            return release
+
+      - name: Delete existing assets
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release = ${{ steps.create_release.outputs.result }}
+            console.log(release.data.assets)
+            await Promise.all(release.data.assets.map(asset => {
+              github.repos.deleteReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                asset_id: asset.id,
+              })
+            }))
+
+      - name: Upload wimboot
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: wimboot
+          asset_name: wimboot
+          asset_content_type: application/octet-stream
+
+      - name: Upload wimboot.i386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: src/wimboot.i386
+          asset_name: wimboot.i386
+          asset_content_type: application/octet-stream
+
+      - name: Clear prerelease flag
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release = ${{ steps.create_release.outputs.result }}
+            await github.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              prerelease: false,
+            })
