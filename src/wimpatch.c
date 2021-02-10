@@ -196,6 +196,12 @@ static int wim_inject_file ( struct vdisk_file *vfile ) {
 	if ( ! vfile->read )
 		return 0;
 
+	/* Ignore bootmgr files */
+	if ( strcasecmp ( vfile->name, "bootmgr" ) == 0 )
+		return 0;
+	if ( strcasecmp ( vfile->name, "bootmgr.exe" ) == 0 )
+		return 0;
+
 	/* Ignore BCD files */
 	if ( strcasecmp ( vfile->name, "BCD" ) == 0 )
 		return 0;
@@ -210,6 +216,14 @@ static int wim_inject_file ( struct vdisk_file *vfile ) {
 
 	/* Ignore .sdi files */
 	if ( strcasecmp ( ext, ".sdi" ) == 0 )
+		return 0;
+
+	/* Ignore .efi files */
+	if ( strcasecmp ( ext, ".efi" ) == 0 )
+		return 0;
+
+	/* Ignore .ttf files */
+	if ( strcasecmp ( ext, ".ttf" ) == 0 )
 		return 0;
 
 	return 1;
