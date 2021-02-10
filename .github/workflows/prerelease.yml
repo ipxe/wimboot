@@ -1,0 +1,101 @@
+name: Prerelease
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  DOWNLOAD: https://github.com/${{ github.repository }}/releases/download
+  ARCHIVE: https://github.com/${{ github.repository }}/archive
+
+jobs:
+
+  release:
+    name: Create release
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt install -y -o Acquire::Retries=50 pandoc
+
+      - name: Get version
+        id: version
+        run: |
+          echo TAG=${GITHUB_REF/refs\/tags\//} >> ${GITHUB_ENV}
+          echo VER=${GITHUB_REF/refs\/tags\/v/} >> ${GITHUB_ENV}
+          echo DATE=$(git show -s --format='%as') >> ${GITHUB_ENV}
+
+      - name: Check binary versions
+        run: |
+          file wimboot | grep "version ${TAG},"
+          file src/wimboot.i386 | grep "version ${TAG},"
+          file src/wimboot.x86_64 | grep "version ${TAG},"
+
+      - name: Extract changes
+        run: |
+          pandoc -f gfm -t gfm --columns=10000 CHANGELOG.md | \
+              sed -E -n '/^## \['${TAG}'\]/,/^##/{/^##/!p}' | tee CHANGES.md
+          [ -s CHANGES.md ]
+
+      - name: Construct release notes
+        run: |
+          BIN=${DOWNLOAD}/${TAG}/wimboot
+          BIN_I386=${DOWNLOAD}/${TAG}/wimboot.i386
+          cat > NOTES.md <<EOF
+          Downloads
+          =========
+
+          Binaries
+          --------
+
+            - [wimboot](${BIN}) (for BIOS and 64-bit UEFI systems)
+            - [wimboot.i386](${BIN_I386}) (for BIOS and 32-bit UEFI systems)
+
+          Source code
+          -----------
+
+            - [wimboot-${VER}.zip](${ARCHIVE}/${TAG}.zip)
+            - [wimboot-${VER}.tar.gz](${ARCHIVE}/${TAG}.tar.gz)
+
+          Changes
+          -------
+          EOF
+          cat CHANGES.md >> NOTES.md
+          cat NOTES.md
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: "${{ env.TAG }} (${{ env.DATE }})"
+          body_path: NOTES.md
+          prerelease: true
+
+      - name: Upload wimboot
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: wimboot
+          asset_name: wimboot
+          asset_content_type: application/octet-stream
+
+      - name: Upload wimboot.i386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: src/wimboot.i386
+          asset_name: wimboot.i386
+          asset_content_type: application/octet-stream
