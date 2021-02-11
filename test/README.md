@@ -16,6 +16,7 @@ boot images:
 
 Within each of the above directories, you need to provide the files:
 
+- `bootmgr`
 - `boot/bcd`
 - `boot/boot.sdi`
 - `sources/boot.wim`
