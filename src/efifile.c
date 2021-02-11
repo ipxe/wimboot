@@ -47,6 +47,7 @@ static const wchar_t *efi_wim_paths[] = {
 	L"\\Windows\\Boot\\Fonts\\segoen_slboot.ttf",
 	L"\\Windows\\Boot\\Fonts\\segoe_slboot.ttf",
 	L"\\Windows\\Boot\\Fonts\\wgl4_boot.ttf",
+	L"\\sms\\boot\\boot.sdi",
 	NULL
 };
 
