@@ -24,6 +24,18 @@ Within each of the above directories, you need to provide the files:
 You can find these files within the relevant Windows installation
 `.iso` images.
 
+For example, you can extract those files with:
+
+```
+7z x \
+    -oimages/win7/x64 \
+    your-windows-7.iso \
+    bootmgr \
+    boot/bcd \
+    boot/boot.sdi \
+    sources/boot.wim
+```
+
 Running tests
 -------------
 
