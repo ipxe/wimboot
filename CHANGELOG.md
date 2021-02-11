@@ -3,6 +3,9 @@ Changelog
 
 ## [Unreleased]
 
+- Extract `BCD`, `boot.sdi`, and standard boot font files
+  automatically from the `.wim` image.
+
 - Use paging and Physical Address Extensions (PAE) to place the initrd
   above 4GB if possible, thereby allowing larger `.wim` images to be
   used on BIOS systems (sponsored by [Digital Intelligence][digint]).

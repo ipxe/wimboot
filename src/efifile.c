@@ -39,6 +39,17 @@
 /** bootmgfw.efi path within WIM */
 static const wchar_t bootmgfw_path[] = L"\\Windows\\Boot\\EFI\\bootmgfw.efi";
 
+/** Other paths within WIM */
+static const wchar_t *efi_wim_paths[] = {
+	L"\\Windows\\Boot\\DVD\\EFI\\boot.sdi",
+	L"\\Windows\\Boot\\DVD\\EFI\\BCD",
+	L"\\Windows\\Boot\\Fonts\\segmono_boot.ttf",
+	L"\\Windows\\Boot\\Fonts\\segoen_slboot.ttf",
+	L"\\Windows\\Boot\\Fonts\\segoe_slboot.ttf",
+	L"\\Windows\\Boot\\Fonts\\wgl4_boot.ttf",
+	NULL
+};
+
 /** bootmgfw.efi file */
 struct vdisk_file *bootmgfw;
 
@@ -207,6 +218,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 							 efi_bootarch() ) ) ) {
 				DBG ( "...extracted %ls\n", bootmgfw_path );
 			}
+			wim_add_files ( vfile, cmdline_index, efi_wim_paths );
 		}
 	}
 

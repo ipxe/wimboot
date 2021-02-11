@@ -35,5 +35,7 @@ extern struct vdisk_file * wim_add_file ( struct vdisk_file *file,
 					  unsigned int index,
 					  const wchar_t *path,
 					  const wchar_t *wname );
+extern void wim_add_files ( struct vdisk_file *file, unsigned int index,
+			    const wchar_t **paths );
 
 #endif /* _WIMFILE_H */

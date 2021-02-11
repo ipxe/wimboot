@@ -62,6 +62,17 @@ size_t initrd_len;
 /** bootmgr.exe path within WIM */
 static const wchar_t bootmgr_path[] = L"\\Windows\\Boot\\PXE\\bootmgr.exe";
 
+/** Other paths within WIM */
+static const wchar_t *wim_paths[] = {
+	L"\\Windows\\Boot\\DVD\\PCAT\\boot.sdi",
+	L"\\Windows\\Boot\\DVD\\PCAT\\BCD",
+	L"\\Windows\\Boot\\Fonts\\segmono_boot.ttf",
+	L"\\Windows\\Boot\\Fonts\\segoen_slboot.ttf",
+	L"\\Windows\\Boot\\Fonts\\segoe_slboot.ttf",
+	L"\\Windows\\Boot\\Fonts\\wgl4_boot.ttf",
+	NULL
+};
+
 /** bootmgr.exe file */
 static struct vdisk_file *bootmgr;
 
@@ -359,6 +370,7 @@ static int add_file ( const char *name, void *data, size_t len ) {
 						L"bootmgr.exe" ) ) ) {
 			DBG ( "...extracted bootmgr.exe\n" );
 		}
+		wim_add_files ( file, cmdline_index, wim_paths );
 	}
 
 	return 0;

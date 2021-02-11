@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <wchar.h>
 #include "wimboot.h"
 #include "vdisk.h"
@@ -44,7 +45,7 @@ struct wim_file {
 };
 
 /** Maximum number of WIM virtual files */
-#define WIM_MAX_FILES 4
+#define WIM_MAX_FILES 8
 
 /** WIM virtual files */
 static struct wim_file wim_files[WIM_MAX_FILES];
@@ -84,12 +85,22 @@ struct vdisk_file * wim_add_file ( struct vdisk_file *file, unsigned int index,
 	struct wim_resource_header meta;
 	struct wim_file *wfile;
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
+	unsigned int i;
 	int rc;
 
 	/* Sanity check */
 	if ( wim_file_idx >= WIM_MAX_FILES )
 		die ( "Too many WIM files\n" );
 	wfile = &wim_files[wim_file_idx];
+
+	/* Construct ASCII file name */
+	snprintf ( name, sizeof ( name ), "%ls", wname );
+
+	/* Skip files already added explicitly */
+	for ( i = 0 ; i < VDISK_MAX_FILES ; i++ ) {
+		if ( strcasecmp ( name, vdisk_files[i].name ) == 0 )
+			return NULL;
+	}
 
 	/* Get WIM header */
 	if ( ( rc = wim_header ( file, &wfile->header ) ) != 0 )
@@ -107,7 +118,34 @@ struct vdisk_file * wim_add_file ( struct vdisk_file *file, unsigned int index,
 	/* Add virtual file */
 	wim_file_idx++;
 	wfile->file = file;
-	snprintf ( name, sizeof ( name ), "%ls", wname );
 	return vdisk_add_file ( name, wfile, wfile->resource.len,
 				wim_read_file );
+}
+
+/**
+ * Add WIM virtual files
+ *
+ * @v file		Underlying virtual file
+ * @v index		Image index, or 0 to use boot image
+ * @v paths		List of paths to files within WIM
+ */
+void wim_add_files ( struct vdisk_file *file, unsigned int index,
+		     const wchar_t **paths ) {
+	const wchar_t **path;
+	const wchar_t *wname;
+	const wchar_t *tmp;
+
+	/* Add any existent files within the list */
+	for ( path = paths ; *path ; path++ ) {
+
+		/* Construct file name */
+		wname = *path;
+		for ( tmp = wname ; *tmp ; tmp++ ) {
+			if ( *tmp == L'\\' )
+				wname = ( tmp + 1 );
+		}
+
+		/* Add virtual file, if existent */
+		wim_add_file ( file, index, *path, wname );
+	}
 }

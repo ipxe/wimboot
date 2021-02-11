@@ -53,7 +53,7 @@ def start_httpd():
     return httpd.server_address[1]
 
 
-def ipxe_script(uuid, version, arch, bootmgr, bootargs):
+def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     """Construct iPXE boot script"""
     script = textwrap.dedent(f"""
     #!ipxe
@@ -65,9 +65,15 @@ def ipxe_script(uuid, version, arch, bootmgr, bootargs):
         script += textwrap.dedent(f"""
         initrd ../images/{version}/{arch}/bootmgr bootmgr
         """).lstrip()
+    if bcd:
+        script += textwrap.dedent(f"""
+        initrd ../images/{version}/{arch}/boot/bcd BCD
+        """).lstrip()
+    if bootsdi:
+        script += textwrap.dedent(f"""
+        initrd ../images/{version}/{arch}/boot/boot.sdi boot.sdi
+        """).lstrip()
     script += textwrap.dedent(f"""
-    initrd ../images/{version}/{arch}/boot/bcd BCD
-    initrd ../images/{version}/{arch}/boot/boot.sdi boot.sdi
     initrd ../images/{version}/{arch}/sources/boot.wim boot.wim
     boot
     """).lstrip()
@@ -178,6 +184,8 @@ for test_file in args.test:
     uefi = test.get('uefi', False)
     memory = test.get('memory', 2048)
     bootmgr = test.get('bootmgr', False)
+    bcd = test.get('bcd', True)
+    bootsdi = test.get('boot.sdi', False)
     bootargs = test.get('bootargs', '')
     logcheck = test.get('logcheck', [])
 
@@ -185,7 +193,7 @@ for test_file in args.test:
     uuid = uuid4().hex
 
     # Construct boot script
-    script = ipxe_script(uuid, version, arch, bootmgr, bootargs)
+    script = ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs)
     if args.verbose >= Verbosity.DEBUG:
         print("%s boot script:\n%s\n" % (name, script.strip()))
     bootfile = 'in/boot-%s.ipxe' % uuid

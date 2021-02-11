@@ -393,7 +393,7 @@ static int wim_direntry ( struct vdisk_file *file, struct wim_header *header,
 
 		/* Check for end of this directory */
 		if ( ! direntry->len ) {
-			DBG ( "Directory entry \"%ls\" not found\n", name );
+			DBG ( "...directory entry \"%ls\" not found\n", name );
 			return -1;
 		}
 
