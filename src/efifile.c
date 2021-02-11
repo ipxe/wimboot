@@ -145,6 +145,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		CHAR16 name[ VDISK_NAME_LEN + 1 /* WNUL */ ];
 	} __attribute__ (( packed )) info;
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
+	struct vdisk_file *wim = NULL;
 	struct vdisk_file *vfile;
 	EFI_FILE_PROTOCOL *root;
 	EFI_FILE_PROTOCOL *file;
@@ -212,15 +213,20 @@ void efi_extract ( EFI_HANDLE handle ) {
 		} else if ( wcscasecmp ( ( wname + ( wcslen ( wname ) - 4 ) ),
 					 L".wim" ) == 0 ) {
 			DBG ( "...found WIM file %ls\n", wname );
-			vdisk_patch_file ( vfile, patch_wim );
-			if ( ( ! bootmgfw ) &&
-			     ( bootmgfw = wim_add_file ( vfile, cmdline_index,
-							 bootmgfw_path,
-							 efi_bootarch() ) ) ) {
-				DBG ( "...extracted %ls\n", bootmgfw_path );
-			}
-			wim_add_files ( vfile, cmdline_index, efi_wim_paths );
+			wim = vfile;
 		}
+	}
+
+	/* Process WIM image */
+	if ( wim ) {
+		vdisk_patch_file ( wim, patch_wim );
+		if ( ( ! bootmgfw ) &&
+		     ( bootmgfw = wim_add_file ( wim, cmdline_index,
+						 bootmgfw_path,
+						 efi_bootarch() ) ) ) {
+			DBG ( "...extracted %ls\n", bootmgfw_path );
+		}
+		wim_add_files ( wim, cmdline_index, efi_wim_paths );
 	}
 
 	/* Check that we have a boot file */

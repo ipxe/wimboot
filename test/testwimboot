@@ -59,6 +59,7 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     #!ipxe
     kernel ../wimboot {bootargs}
     initrd -n qr.txt qr-{uuid}.txt qr.txt
+    initrd ../images/{version}/{arch}/sources/boot.wim boot.wim
     initrd ../winpeshl.ini winpeshl.ini
     """).lstrip()
     if bootmgr:
@@ -74,7 +75,6 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
         initrd ../images/{version}/{arch}/boot/boot.sdi boot.sdi
         """).lstrip()
     script += textwrap.dedent(f"""
-    initrd ../images/{version}/{arch}/sources/boot.wim boot.wim
     boot
     """).lstrip()
     return script

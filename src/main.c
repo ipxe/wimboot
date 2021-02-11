@@ -77,6 +77,9 @@ static const wchar_t *wim_paths[] = {
 /** bootmgr.exe file */
 static struct vdisk_file *bootmgr;
 
+/** WIM image file */
+static struct vdisk_file *bootwim;
+
 /** Minimal length of embedded bootmgr.exe */
 #define BOOTMGR_MIN_LEN 16384
 
@@ -364,14 +367,7 @@ static int add_file ( const char *name, void *data, size_t len ) {
 	} else if ( strcasecmp ( ( name + strlen ( name ) - 4 ),
 				 ".wim" ) == 0 ) {
 		DBG ( "...found WIM file %s\n", name );
-		vdisk_patch_file ( file, patch_wim );
-		if ( ( ! bootmgr ) &&
-		     ( bootmgr = wim_add_file ( file, cmdline_index,
-						bootmgr_path,
-						L"bootmgr.exe" ) ) ) {
-			DBG ( "...extracted bootmgr.exe\n" );
-		}
-		wim_add_files ( file, cmdline_index, wim_paths );
+		bootwim = file;
 	}
 
 	return 0;
@@ -446,6 +442,18 @@ int main ( void ) {
 	/* Extract files from initrd */
 	if ( cpio_extract ( initrd, initrd_len, add_file ) != 0 )
 		die ( "FATAL: could not extract initrd files\n" );
+
+	/* Process WIM image */
+	if ( bootwim ) {
+		vdisk_patch_file ( bootwim, patch_wim );
+		if ( ( ! bootmgr ) &&
+		     ( bootmgr = wim_add_file ( bootwim, cmdline_index,
+						bootmgr_path,
+						L"bootmgr.exe" ) ) ) {
+			DBG ( "...extracted bootmgr.exe\n" );
+		}
+		wim_add_files ( bootwim, cmdline_index, wim_paths );
+	}
 
 	/* Add INT 13 drive */
 	callback.drive = initialise_int13();
