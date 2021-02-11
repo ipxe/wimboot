@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.7.0] 2021-02-11
+
 - Extract `BCD`, `boot.sdi`, and standard boot font files
   automatically from the `.wim` image.
 
@@ -195,6 +197,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.7.0]: https://github.com/ipxe/wimboot/releases/tag/v2.7.0
 [v2.6.0]: https://github.com/ipxe/wimboot/releases/tag/v2.6.0
 [v2.5.2]: https://github.com/ipxe/wimboot/releases/tag/v2.5.2
 [v2.5.1]: https://github.com/ipxe/wimboot/releases/tag/v2.5.1
