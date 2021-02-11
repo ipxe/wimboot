@@ -13,6 +13,7 @@ boot images:
 - `./images/win8/x86` - Windows 8.1 (32-bit)
 - `./images/win10/x64` - Windows 10 (64-bit)
 - `./images/win10/x86` - Windows 10 (32-bit)
+- `./images/win2019/x64` - Windows Server 2019 (64-bit)
 
 Within each of the above directories, you need to provide the files:
 

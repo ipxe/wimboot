@@ -1,0 +1,4 @@
+name: Windows Server 2019 (UEFI)
+version: win2019
+arch: x64
+uefi: true
