@@ -228,8 +228,11 @@ for test_file in args.test:
 
     # Launch interactive viewer, if requested
     if args.interactive:
-        viewer = subprocess.Popen(['virt-viewer', '--attach',
-                                   '--id', str(vm.ID())])
+        viewer = subprocess.Popen([
+            'virt-viewer',
+            '--connect', args.connection,
+            '--attach',
+            '--id', str(vm.ID())])
     else:
         viewer = None
 
