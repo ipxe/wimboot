@@ -40,7 +40,7 @@ At the end of each test run, the `out` directory will include a debug
 iPXE boot ROM
 -------------
 
-Most Linux distributionss provide iPXE boot ROMs for BIOS virtual
+Most Linux distributions provide iPXE boot ROMs for BIOS virtual
 machines, but may not provide a suitable boot ROM for UEFI virtual
 machines.
 
