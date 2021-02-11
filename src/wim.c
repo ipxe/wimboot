@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <assert.h>
 #include "wimboot.h"
 #include "vdisk.h"
 #include "lzx.h"
@@ -157,9 +158,11 @@ static int wim_chunk ( struct vdisk_file *file, struct wim_header *header,
 	len = ( next_offset - offset );
 
 	/* Calculate uncompressed length */
+	assert ( resource->len > 0 );
 	chunks = ( ( resource->len + WIM_CHUNK_LEN - 1 ) / WIM_CHUNK_LEN );
-	expected_out_len = ( ( chunk >= ( chunks - 1 ) ) ?
-			     ( resource->len % WIM_CHUNK_LEN ) : WIM_CHUNK_LEN);
+	expected_out_len = WIM_CHUNK_LEN;
+	if ( chunk >= ( chunks - 1 ) )
+		expected_out_len -= ( -resource->len & ( WIM_CHUNK_LEN - 1 ) );
 
 	/* Read possibly-compressed data */
 	if ( len == expected_out_len ) {
