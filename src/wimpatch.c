@@ -196,6 +196,10 @@ static int wim_inject_file ( struct vdisk_file *vfile ) {
 	if ( ! vfile->read )
 		return 0;
 
+	/* Ignore wimboot itself */
+	if ( strcasecmp ( vfile->name, "wimboot" ) == 0 )
+		return 0;
+
 	/* Ignore bootmgr files */
 	if ( strcasecmp ( vfile->name, "bootmgr" ) == 0 )
 		return 0;
