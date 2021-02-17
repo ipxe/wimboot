@@ -68,23 +68,18 @@ Full release (signed binaries)
    unzip -d src -o -DD *.zip
    ```
 
-5. Commit the signed binaries with a message such as:
-   ```
-   [release] Release version 2.7.0-signed
-   ```
-
-6. Verify that the binaries have not been altered by the signing
+5. Verify that the binaries have not been altered by the signing
    process:
    ```
    make -C src
    ```
 
-7. Check that the verification process has not modified any files:
+6. Commit the signed binaries with a message such as:
    ```
-   git status
+   [release] Release version 2.7.0-signed
    ```
 
-8. Push the signed binary branch, e.g.:
+7. Push the signed binary branch, e.g.:
    ```
    git push origin v2.7.0-signed
    ```
