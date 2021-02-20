@@ -226,13 +226,14 @@ for test_file in args.test:
     if args.verbose >= Verbosity.DEBUG:
         print("%s description:\n%s\n" % (name, vm.XMLDesc().strip()))
 
-    # Launch interactive viewer, if requested
+    # Launch interactive viewers, if requested
     if args.interactive:
-        viewer = subprocess.Popen(['virt-viewer', '--attach',
-                                   '--connect', args.connection,
-                                   '--id', str(vm.ID())])
+        viewers = [subprocess.Popen(['virt-viewer', '--attach',
+                                     '--connect', args.connection,
+                                     '--id', str(vm.ID())]),
+                   subprocess.Popen(['tail', '-f', logfile])]
     else:
-        viewer = None
+        viewers = []
 
     # Wait for test to complete
     timeout = time.clock_gettime(time.CLOCK_MONOTONIC) + args.timeout
@@ -247,8 +248,8 @@ for test_file in args.test:
         image = screenshot(vm)
         image.save('out/%s.png' % key)
 
-        # Abort if viewer has been closed
-        if viewer and viewer.poll() is not None:
+        # Abort if a viewer has been closed
+        if any(x.poll() is not None for x in viewers):
             print("%s aborted" % name)
             aborted = True
             break
@@ -275,6 +276,11 @@ for test_file in args.test:
 
         # Timeout
         print("%s timed out" % name)
+
+    # Terminate viewers
+    for viewer in viewers:
+        viewer.terminate()
+        viewer.wait()
 
     # Destroy VM
     vm.destroy()
