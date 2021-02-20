@@ -49,6 +49,9 @@ struct e820_entry * memmap_next ( struct e820_entry *prev ) {
 	if ( ! prev ) {
 		memset ( &e820_buf, 0, sizeof ( e820_buf ) );
 		e820_ebx = 0;
+	} else if ( e820_ebx == 0 ) {
+		/* Reach the end */
+		return NULL;
 	}
 
 	/* Read system memory map */
