@@ -152,7 +152,6 @@ void efi_extract ( EFI_HANDLE handle ) {
 	UINTN size;
 	CHAR16 *wname;
 	EFI_STATUS efirc;
-	unsigned int idx = 0;
 
 	/* Open file system */
 	if ( ( efirc = bs->OpenProtocol ( handle,
@@ -184,10 +183,6 @@ void efi_extract ( EFI_HANDLE handle ) {
 		}
 		if ( size == 0 )
 			break;
-
-		/* Sanity check */
-		if ( idx >= VDISK_MAX_FILES )
-			die ( "Too many files\n" );
 
 		/* Open file */
 		wname = info.file.FileName;
