@@ -184,6 +184,10 @@ void efi_extract ( EFI_HANDLE handle ) {
 		if ( size == 0 )
 			break;
 
+		/* Ignore subdirectories */
+		if ( info.file.Attribute & EFI_FILE_DIRECTORY )
+			continue;
+
 		/* Open file */
 		wname = info.file.FileName;
 		if ( ( efirc = root->Open ( root, &file, wname,
