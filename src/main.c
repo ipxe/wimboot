@@ -492,6 +492,10 @@ int main ( void ) {
 	bootapps.regions[INITRD_REGION].num_pages =
 		page_len ( initrd, initrd + initrd_len );
 
+	/* Omit initrd region descriptor if located above 4GB */
+	if ( initrd_phys >= ADDR_4GB )
+		bootapps.memory.num_regions--;
+
 	/* Disable paging */
 	disable_paging ( &state );
 
