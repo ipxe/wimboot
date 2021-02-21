@@ -1,0 +1,8 @@
+name: Windows 10 (High RAM, 32-bit)
+version: win10
+arch: x86
+memory: 5120
+logcheck:
+  - 'Found initrd at \[0x[0-9a-f]{8},0x[8-9a-f][0-9a-f]{7}\)'
+  - 'Placing initrd at \[0x[0-9a-f]{8},0x[0-7][0-9a-f]{7}\)'
+  - 'Placing initrd at physical \[0x[1-9a-f][0-9a-f]{8,},'
