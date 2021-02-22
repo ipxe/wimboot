@@ -3,6 +3,16 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.7.2] 2021-02-22
+
+- Fix BIOS booting of 32-bit versions of Windows 8 and above with more
+  than 4GB of RAM.
+
+- Ignore subdirectories when booting from a USB key (or other real
+  filesystem), thereby avoiding potential filename collisions.
+
+- Avoid potential infinite loops when retrieving the BIOS memory map.
+
 ## [v2.7.1] 2021-02-11
 
 - Extract `BCD`, `boot.sdi`, and standard boot font files
@@ -197,6 +207,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.7.2]: https://github.com/ipxe/wimboot/releases/tag/v2.7.2
 [v2.7.1]: https://github.com/ipxe/wimboot/releases/tag/v2.7.1
 [v2.6.0]: https://github.com/ipxe/wimboot/releases/tag/v2.6.0
 [v2.5.2]: https://github.com/ipxe/wimboot/releases/tag/v2.5.2
