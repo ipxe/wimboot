@@ -83,6 +83,9 @@ static struct vdisk_file *bootwim;
 /** Minimal length of embedded bootmgr.exe */
 #define BOOTMGR_MIN_LEN 16384
 
+/** 1MB memory threshold */
+#define ADDR_1MB 0x00100000
+
 /** 2GB memory threshold */
 #define ADDR_2GB 0x80000000
 
@@ -374,7 +377,7 @@ static int add_file ( const char *name, void *data, size_t len ) {
 }
 
 /**
- * Relocate data below 2GB if possible
+ * Relocate data between 1MB and 2GB if possible
  *
  * @v data		Start of data
  * @v len		Length of data
@@ -396,6 +399,8 @@ static void * relocate_memory_low ( void *data, size_t len ) {
 		start -= len;
 		start &= ~( PAGE_SIZE - 1 );
 		if ( start < e820->start )
+			continue;
+		if ( start < ADDR_1MB )
 			continue;
 
 		/* Relocate to this region */
