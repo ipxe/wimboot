@@ -1,0 +1,9 @@
+name: Test Windows 10 bootmgr.exe extraction
+version: win10
+arch: x64
+bootmgr: true
+logcheck:
+  - "found bootmgr"
+  - "checking for XCA-compressed bootmgr.exe"
+  - "extracting embedded bootmgr.exe"
+  - "Using bootmgr.exe"

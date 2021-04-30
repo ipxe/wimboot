@@ -3,6 +3,9 @@ Changelog
 
 ## [Unreleased]
 
+- Fix extraction of embedded `bootmgr.exe` from Windows 10 versions of
+  `bootmgr`.
+
 ## [v2.7.2] 2021-02-22
 
 - Fix BIOS booting of 32-bit versions of Windows 8 and above with more

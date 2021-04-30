@@ -1,8 +1,9 @@
-name: Test bootmgr.exe extraction
+name: Test Windows 7 bootmgr.exe extraction
 version: win7
 arch: x64
 bootmgr: true
 logcheck:
   - "found bootmgr"
+  - "checking for LZNT1-compressed bootmgr.exe"
   - "extracting embedded bootmgr.exe"
   - "Using bootmgr.exe"

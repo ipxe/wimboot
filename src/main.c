@@ -264,11 +264,11 @@ static struct vdisk_file * add_bootmgr ( const void *data, size_t len ) {
 	ssize_t decompressed_len;
 	size_t padded_len;
 
-	/* Look for an embedded compressed bootmgr.exe on a paragraph
-	 * boundary.
+	/* Look for an embedded compressed bootmgr.exe on an
+	 * eight-byte boundary.
 	 */
 	for ( offset = BOOTMGR_MIN_LEN ; offset < ( len - BOOTMGR_MIN_LEN ) ;
-	      offset += 0x10 ) {
+	      offset += 0x08 ) {
 
 		/* Initialise checks */
 		decompress = NULL;
@@ -282,7 +282,8 @@ static struct vdisk_file * add_bootmgr ( const void *data, size_t len ) {
 		 * boundary, with a preceding tag byte indicating that
 		 * these two bytes would indeed be uncompressed.
 		 */
-		if ( ( ( compressed[0x02] & 0x03 ) == 0x00 ) &&
+		if ( ( ( offset & 0x0f ) == 0x00 ) &&
+		     ( ( compressed[0x02] & 0x03 ) == 0x00 ) &&
 		     ( compressed[0x03] == 'M' ) &&
 		     ( compressed[0x04] == 'Z' ) ) {
 			DBG ( "...checking for LZNT1-compressed bootmgr.exe at "
@@ -313,7 +314,7 @@ static struct vdisk_file * add_bootmgr ( const void *data, size_t len ) {
 		}
 
 		/* If we have not found a possible bootmgr.exe, skip
-		 * to the next paragraph.
+		 * to the next offset.
 		 */
 		if ( ! decompress )
 			continue;
