@@ -24,6 +24,7 @@
  *
  */
 
+#include <string.h>
 #include <stdio.h>
 #include "wimboot.h"
 #include "cmdline.h"
@@ -31,6 +32,20 @@
 #include "efifile.h"
 #include "efiblock.h"
 #include "efiboot.h"
+
+/** EFI handover boot parameters */
+struct efi_boot_params {
+	/** Padding */
+	uint8_t reserved[0x228];
+	/** Command line pointer */
+	uint32_t cmd_line_ptr;
+} __attribute__ (( packed ));
+
+/** Start of uninitialised data section (defined by linker) */
+extern char _bss[];
+
+/** End of uninitialised data section (defined by linker) */
+extern char _ebss[];
 
 /**
  * Process command line
@@ -52,13 +67,11 @@ static void efi_cmdline ( EFI_LOADED_IMAGE_PROTOCOL *loaded ) {
 /**
  * EFI entry point
  *
- * @v image_handle	Image handle
- * @v systab		EFI system table
+ * @v cmdline		Command line (if not part of loaded image protocol)
  * @ret efirc		EFI status code
  */
-EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
-			     EFI_SYSTEM_TABLE *systab ) {
-	EFI_BOOT_SERVICES *bs;
+static EFI_STATUS efi_main ( char *cmdline ) {
+	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
 	union {
 		EFI_LOADED_IMAGE_PROTOCOL *image;
 		void *interface;
@@ -67,29 +80,26 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 	EFI_HANDLE vpartition = NULL;
 	EFI_STATUS efirc;
 
-	/* Record EFI handle and system table */
-	efi_image_handle = image_handle;
-	efi_systab = systab;
-	bs = systab->BootServices;
-
-	/* Initialise stack cookie */
-	init_cookie();
-
 	/* Print welcome banner */
 	printf ( "\n\nwimboot " VERSION " -- Windows Imaging Format "
 		 "bootloader -- https://ipxe.org/wimboot\n\n" );
 
 	/* Get loaded image protocol */
-	if ( ( efirc = bs->OpenProtocol ( image_handle,
+	if ( ( efirc = bs->OpenProtocol ( efi_image_handle,
 					  &efi_loaded_image_protocol_guid,
-					  &loaded.interface, image_handle, NULL,
+					  &loaded.interface, efi_image_handle,
+					  NULL,
 					  EFI_OPEN_PROTOCOL_GET_PROTOCOL ))!=0){
 		die ( "Could not open loaded image protocol: %#lx\n",
 		      ( ( unsigned long ) efirc ) );
 	}
 
 	/* Process command line */
-	efi_cmdline ( loaded.image );
+	if ( cmdline ) {
+		process_cmdline ( cmdline );
+	} else {
+		efi_cmdline ( loaded.image );
+	}
 
 	/* Extract files from file system */
 	efi_extract ( loaded.image->DeviceHandle );
@@ -101,4 +111,53 @@ EFI_STATUS EFIAPI efi_main ( EFI_HANDLE image_handle,
 	efi_boot ( bootmgfw, bootmgfw_path, vpartition );
 
 	return 0;
+}
+
+/**
+ * EFI entry point
+ *
+ * @v image_handle	Image handle
+ * @v systab		EFI system table
+ * @ret efirc		EFI status code
+ */
+EFI_STATUS EFIAPI efi_entry ( EFI_HANDLE image_handle,
+			      EFI_SYSTEM_TABLE *systab ) {
+
+	/* Record EFI handle and system table */
+	efi_image_handle = image_handle;
+	efi_systab = systab;
+
+	/* Initialise stack cookie */
+	init_cookie();
+
+	/* Jump to main entry point */
+	return efi_main ( NULL );
+}
+
+/**
+ * Legacy bzImage EFI handover entry point
+ *
+ * @v image_handle	Image handle
+ * @v systab		EFI system table
+ * @v boot_params	Linux boot parameters
+ */
+EFI_STATUS efi_handover ( EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *systab,
+			  struct efi_boot_params *boot_params ) {
+	char *cmdline;
+
+	/* Record EFI handle and system table */
+	efi_image_handle = image_handle;
+	efi_systab = systab;
+
+	/* Initialise stack cookie */
+	init_cookie();
+
+	/* Clear uninitialised data section */
+	memset ( _bss, 0, ( _ebss - _bss ) );
+
+	/* Get command line */
+	cmdline = ( ( char * ) ( intptr_t ) boot_params->cmd_line_ptr );
+
+	/* Jump to main entry point */
+	return efi_main ( cmdline );
 }

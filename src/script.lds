@@ -21,6 +21,7 @@ SECTIONS {
 	/* Real-mode uninitialised data section */
 	.bss16 ( NOLOAD ) : {
 		_bss16 = .;
+		_handover = .;
 		*(.stack16)
 		*(.stack16.*)
 		*(.bss16)
@@ -86,8 +87,10 @@ SECTIONS {
 		*(.stack.*)
 		. = ALIGN ( alignment );
 		_ebss = .;
+		_ehandover = .;
 	}
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
+	_handover_len = ABSOLUTE ( _ehandover ) - ABSOLUTE ( _handover );
 
 	/* Relocations section */
 	_reloc_pos = ( _payload_pos + _payload_len );
