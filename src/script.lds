@@ -89,8 +89,21 @@ SECTIONS {
 	}
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
 
+	/* Secure Boot Advanced Targeting (SBAT) section */
+	_sbat_pos = ( _payload_pos + _payload_len );
+	.sbat : AT ( _sbat_pos ) {
+		_sbat = .;
+		*(.sbat)
+		*(.sbat.*)
+		_msbat = .;
+		. = ALIGN ( alignment );
+		_esbat = .;
+	}
+	_sbat_used = ABSOLUTE ( _msbat ) - ABSOLUTE ( _sbat );
+	_sbat_len = ABSOLUTE ( _esbat ) - ABSOLUTE ( _sbat );
+
 	/* Relocations section */
-	_reloc_pos = ( _payload_pos + _payload_len );
+	_reloc_pos = ( _sbat_pos + _sbat_len );
 	_reloc = .;
 
 	_end = .;

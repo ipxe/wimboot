@@ -89,7 +89,7 @@ pe_header:
 	.ascii	"PE"			/* Signature */
 	.byte	0, 0
 	.word	coff_machine		/* Machine */
-	.word	4			/* NumberOfSections */
+	.word	5			/* NumberOfSections */
 	.long	0x10d1a884		/* TimeDateStamp */
 	.long	0			/* PointerToSymbolTable */
 	.long	0			/* NumberOfSymbols */
@@ -186,6 +186,17 @@ coff_sections:
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
 	.long	0xc8000080		/* Characteristics */
+	.ascii	".sbat"			/* Name */
+	.byte	0, 0, 0
+	.long	_sbat_used		/* Misc.VirtualSize */
+	.long	( _sbat - BASE_ADDRESS ) /* VirtualAddress */
+	.long	_sbat_len		/* SizeOfRawData */
+	.long	_sbat_pos		/* PointerToRawData */
+	.long	0			/* PointerToRelocations */
+	.long	0			/* PointerToLinenumbers */
+	.word	0			/* NumberOfRelocations */
+	.word	0			/* NumberOfLinenumbers */
+	.long	0x48000040		/* Characteristics */
 	.ascii	".reloc"		/* Name */
 	.byte	0, 0
 	.long	0			/* Misc.VirtualSize */

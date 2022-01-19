@@ -1,5 +1,7 @@
 VERSION := v2.7.3
 
+SBAT_GENERATION := 1
+
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o die.o efi.o efimain.o
 OBJECTS += efiguid.o efifile.o efipath.o efiboot.o efiblock.o cmdline.o
@@ -32,6 +34,7 @@ HOST_CFLAGS += -Wall -W -Werror
 
 CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
 CFLAGS += -DVERSION="\"$(VERSION)\""
+CFLAGS += -DSBAT_GENERATION="\"$(SBAT_GENERATION)\""
 
 CFLAGS_i386 += -m32 -march=i386 -malign-double -fno-pic
 CFLAGS_x86_64 += -m64 -mno-red-zone -fpie

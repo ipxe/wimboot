@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+- Add [Secure Boot Advanced Targeting (SBAT)][sbat] metadata.
+
 ## [v2.7.3] 2021-04-30
 
 - Fix extraction of embedded `bootmgr.exe` from Windows 10 versions of
@@ -248,3 +250,4 @@ Changelog
 [digint]: https://digitalintelligence.com/
 [jump]: https://jumptrading.com/
 [travis]: https://travis-ci.com/
+[sbat]: https://github.com/rhboot/shim/blob/main/SBAT.md

@@ -16,7 +16,9 @@ Prerelease (unsigned binaries)
    there are zero defects reported via [Coverity
    Scan](https://scan.coverity.com/projects/ipxe-wimboot).
 
-2. Edit [`src/Makefile`](src/Makefile) to update `VERSION`.
+2. Edit [`src/Makefile`](src/Makefile) to update `VERSION`, and to
+   increment `SBAT_GENERATION` if needed (i.e. if the release fixes a
+   new Secure Boot exploit).
 
 3. Edit [`CHANGELOG.md`](CHANGELOG.md) to create a section and link
    for the new release.
