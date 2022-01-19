@@ -138,7 +138,7 @@ opt_header:
 	.long	0			/* SizeOfHeapCommit */
 #endif
 	.long	0			/* LoaderFlags */
-	.long	16			/* NumberOfRvaAndSizes */
+	.long	8			/* NumberOfRvaAndSizes */
 	.equ	opt_header_len,	. - opt_header
 	.size	opt_header,	. - opt_header
 data_directory:
@@ -150,7 +150,7 @@ directory_entry_reloc:
 directory_entry_debug:
 	.long	( debug - _prefix )
 	.long	debug_len
-	.org	data_directory + ( 8 * 16 )
+	.org	data_directory + ( 8 * 8 )
 	.equ	data_directory_len, . - data_directory
 	.size	data_directory,	    . - data_directory
 coff_sections:

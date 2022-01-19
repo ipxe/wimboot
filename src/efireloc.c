@@ -392,6 +392,7 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 	EFI_IMAGE_OPTIONAL_HEADER_UNION *nt;
 	EFI_IMAGE_DATA_DIRECTORY *data_dir;
 	EFI_IMAGE_SECTION_HEADER *pe_sections;
+	unsigned int num_data_dirs;
 	UINT32 *image_size;
 	bfd *bfd;
 	asymbol **symtab;
@@ -422,15 +423,16 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 	if ( nt->Pe32.FileHeader.Machine == EFI_IMAGE_MACHINE_IA32 ) {
 		image_size = &nt->Pe32.OptionalHeader.SizeOfImage;
 		data_dir = nt->Pe32.OptionalHeader.DataDirectory;
-		pe_sections = ( ( ( void * ) nt ) + sizeof ( nt->Pe32 ) );
+		num_data_dirs = nt->Pe32.OptionalHeader.NumberOfRvaAndSizes;
 	} else if ( nt->Pe32Plus.FileHeader.Machine == EFI_IMAGE_MACHINE_X64 ) {
 		image_size = &nt->Pe32Plus.OptionalHeader.SizeOfImage;
 		data_dir = nt->Pe32Plus.OptionalHeader.DataDirectory;
-		pe_sections = ( ( ( void * ) nt ) + sizeof ( nt->Pe32Plus ) );
+		num_data_dirs = nt->Pe32Plus.OptionalHeader.NumberOfRvaAndSizes;
 	} else {
 		eprintf ( "Unrecognised machine type\n" );
 		exit ( 1 );
 	}
+	pe_sections = ( ( void * ) &data_dir[num_data_dirs] );
 
 	/* Open the input file */
 	bfd = open_input_bfd ( elf_name );
