@@ -1,7 +1,7 @@
 SECTIONS {
 
 	/* Align sections to keep PE tools happy */
-	alignment = 16;
+	alignment = 512;
 
 	/* Virtual addresses start at 0x20000 */
 	. = 0x20000;

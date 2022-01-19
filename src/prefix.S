@@ -112,8 +112,8 @@ opt_header:
 	.long	( _data - BASE_ADDRESS ) /* BaseOfData */
 	.long	BASE_ADDRESS		/* ImageBase */
 #endif
-	.long	0x10			/* SectionAlignment */
-	.long	0x10			/* FileAlignment */
+	.long	0x200			/* SectionAlignment */
+	.long	0x200			/* FileAlignment */
 	.word	0			/* MajorOperatingSystemVersion */
 	.word	0			/* MinorOperatingSystemVersion */
 	.word	0			/* MajorImageVersion */
