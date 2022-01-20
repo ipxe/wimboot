@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.7.4] 2022-01-20
+
 - Add [Secure Boot Advanced Targeting (SBAT)][sbat] metadata.
 
 ## [v2.7.3] 2021-04-30
@@ -214,6 +216,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.7.4]: https://github.com/ipxe/wimboot/releases/tag/v2.7.4
 [v2.7.3]: https://github.com/ipxe/wimboot/releases/tag/v2.7.3
 [v2.7.2]: https://github.com/ipxe/wimboot/releases/tag/v2.7.2
 [v2.7.1]: https://github.com/ipxe/wimboot/releases/tag/v2.7.1
