@@ -16,39 +16,39 @@ Prerelease (unsigned binaries)
    there are zero defects reported via [Coverity
    Scan](https://scan.coverity.com/projects/ipxe-wimboot).
 
-1. Edit [`src/Makefile`](src/Makefile) to update `VERSION`.
+2. Edit [`src/Makefile`](src/Makefile) to update `VERSION`.
 
-2. Edit [`CHANGELOG.md`](CHANGELOG.md) to create a section and link
+3. Edit [`CHANGELOG.md`](CHANGELOG.md) to create a section and link
    for the new release.
 
-3. Rebuild with the new version number:
+4. Rebuild with the new version number:
    ```
    make -C src clean all
    ```
 
-4. Commit these changes with a message such as:
+5. Commit these changes with a message such as:
    ```
    [release] Release version 2.7.0
    ```
 
-5. Tag the commit, e.g.:
+6. Tag the commit, e.g.:
    ```
    git tag v2.7.0
    ```
 
-6. Push the tag (and only the tag), e.g.
+7. Push the tag (and only the tag), e.g.
    ```
    git push origin v2.7.0
    ```
    This will automatically create a prerelease including the unsigned
    binaries as committed to the source tree.
 
-7. When the tag checks have completed successfully, push as normal:
+8. When the tag checks have completed successfully, push as normal:
    ```
    git push
    ```
 
-8. Submit `src/wimboot.cab` for UEFI Secure Boot signing using
+9. Submit `src/wimboot.cab` for UEFI Secure Boot signing using
    whatever process is current at the time.
 
 Full release (signed binaries)
