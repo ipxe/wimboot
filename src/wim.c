@@ -32,6 +32,7 @@
 #include "wimboot.h"
 #include "vdisk.h"
 #include "lzx.h"
+#include "xca.h"
 #include "wim.h"
 
 /** WIM chunk buffer */
@@ -180,6 +181,8 @@ static int wim_chunk ( struct vdisk_file *file, struct wim_header *header,
 		/* Identify decompressor */
 		if ( header->flags & WIM_HDR_LZX ) {
 			decompress = lzx_decompress;
+		} else if ( header->flags & WIM_HDR_XPRESS ) {
+			decompress = xca_decompress;
 		} else {
 			DBG ( "Can't handle unknown compression scheme %#08x "
 			      "for %#llx chunk %d at [%#llx+%#llx)\n",

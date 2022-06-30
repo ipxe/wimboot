@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+- Support images compressed using the XPRESS compression scheme.
+
 ## [v2.7.4] 2022-01-20
 
 - Add [Secure Boot Advanced Targeting (SBAT)][sbat] metadata.
