@@ -157,6 +157,10 @@ ssize_t xca_decompress ( const void *data, size_t len, void *buf ) {
 		}
 	}
 
+	/* Allow for termination with no explicit end marker symbol */
+	if ( src == end )
+		return out_len;
+
 	DBG ( "XCA input overrun at output length %#zx\n", out_len );
 	return -1;
 }
