@@ -432,7 +432,12 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 		eprintf ( "Unrecognised machine type\n" );
 		exit ( 1 );
 	}
-	pe_sections = ( ( void * ) &data_dir[num_data_dirs] );
+	if ( num_data_dirs > EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES ) {
+		eprintf ( "Too may data directory entries\n" );
+		exit ( 1 );
+	}
+	pe_sections = ( ( ( void * ) data_dir ) +
+			( num_data_dirs * sizeof ( data_dir[0] ) ) );
 
 	/* Open the input file */
 	bfd = open_input_bfd ( elf_name );
