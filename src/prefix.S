@@ -39,11 +39,23 @@
 /** Sector size */
 #define SECTOR_SIZE 512
 
+/** Prefix length */
+#define PREFIX_LEN ( ( SETUP_SECTS + 1 ) * SECTOR_SIZE )
+
 /** Protected-mode code will be loaded high */
 #define LOADED_HIGH 0x01
 
 /** Protected-mode code will be loaded to this linear address */
 #define LOADED_HIGH_ADDRESS 0x100000
+
+/** Kernel supports the 32-bit EFI handover entry point */
+#define XLF_EFI_HANDOVER_32 0x0004
+
+/** Kernel supports the 64-bit EFI handover entry point */
+#define XLF_EFI_HANDOVER_64 0x0008
+
+/** kernel has the legacy 64-bit entry point at 0x200. */
+#define XLF_KERNEL_64 0x0001
 
 /** Protected-mode bit in CR0 */
 #define CR0_PE 0x01
@@ -57,15 +69,19 @@
 /** 32 bit protected mode flat data segment */
 #define PREFIX_FLAT_DS 0x18
 
-/* PE header architecture-dependent values */
+/* Architecture-dependent values */
 #if __x86_64__
 	.equ	coff_machine, 0x8664
 	.equ	coff_characteristics, 0x2022
 	.equ	opt_magic, 0x20b
+	.equ	xlf_efi_handover, (XLF_EFI_HANDOVER_64 + XLF_KERNEL_64)
+	.equ	startup_offset, BASE_ADDRESS + PREFIX_LEN + 0x200
 #else
 	.equ	coff_machine, 0x014c
 	.equ	coff_characteristics, 0x2102
 	.equ	opt_magic, 0x10b
+	.equ	xlf_efi_handover, XLF_EFI_HANDOVER_32
+	.equ	startup_offset, BASE_ADDRESS + PREFIX_LEN
 #endif
 
 	.text
@@ -104,7 +120,7 @@ opt_header:
 	.long	_text_total_len		/* SizeOfCode */
 	.long	_data_total_len		/* SizeOfInitializedData */
 	.long	_bss_total_len		/* SizeOfUninitializedData */
-	.long	( efi_main - BASE_ADDRESS ) /* AddressOfEntryPoint */
+	.long	( efi_entry - BASE_ADDRESS ) /* AddressOfEntryPoint */
 	.long	( _text - BASE_ADDRESS ) /* BaseOfCode */
 #if __x86_64__
 	.quad	BASE_ADDRESS		/* ImageBase */
@@ -230,7 +246,7 @@ header:
 
 	.org	0x206
 version:
-	.word	0x203	/* Version 2.03 */
+	.word	0x20c	/* Version 2.12 */
 
 	.org	0x20e
 kernel_version:
@@ -240,6 +256,10 @@ kernel_version:
 loadflags:
 	.byte	LOADED_HIGH
 
+        .org    0x214
+code32_start:
+        .long   0       /* Filled in by boot loader */
+        
 	.org	0x218
 ramdisk_image:
 	.long	0	/* Filled in by boot loader */
@@ -247,6 +267,22 @@ ramdisk_image:
 	.org	0x21c
 ramdisk_size:
 	.long	0	/* Filled in by boot loader */
+	
+	.org    0x220
+bootsect_kludge:
+	.long   0
+
+	.org    0x224
+heap_end_ptr:
+	.short  0
+
+	.org    0x226
+ext_loader_ver:
+	.byte   0
+
+	.org    0x227
+ext_loader_type:
+	.byte   0
 
 	.org	0x228
 cmd_line_ptr:
@@ -256,6 +292,30 @@ cmd_line_ptr:
 ramdisk_max:
 	.long	0xffffffff
 
+	.org	0x236
+xloadflags:
+	.word	xlf_efi_handover
+
+	.org	0x238
+cmdline_size:
+	.long	0x400
+
+	.org	0x258
+pref_address:
+	.long	_handover
+	.long	0
+
+	.org	0x260
+init_size:
+	.long	_handover_len
+
+	.org	0x264
+handover_offset:
+#if __x86_64__
+	.long	( _efi_handover_off - 0x200 )
+#else
+	.long   ( _efi_handover_off )
+#endif
 version_string:
 	.asciz	VERSION
 
@@ -359,4 +419,4 @@ debug_rsds:
 	.equ	debug_rsds_len, . - debug_rsds
 	.size	debug_rsds,	. - debug_rsds
 
-	.org	( ( SETUP_SECTS + 1 ) * SECTOR_SIZE )
+	.org	PREFIX_LEN

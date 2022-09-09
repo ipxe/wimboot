@@ -35,5 +35,5 @@ struct vdisk_file;
 
 extern struct vdisk_file *bootmgfw;
 extern void efi_extract ( EFI_HANDLE handle );
-
+int efi_add_file ( const char *name, void *data, size_t len);
 #endif /* _EFIFILE_H */

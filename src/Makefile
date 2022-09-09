@@ -32,7 +32,7 @@ ZLIB_DIR	:= /usr
 
 HOST_CFLAGS += -Wall -W -Werror
 
-CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
+CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar -ggdb
 CFLAGS += -DVERSION="\"$(VERSION)\""
 CFLAGS += -DSBAT_GENERATION="\"$(SBAT_GENERATION)\""
 
@@ -102,7 +102,7 @@ wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 
 wimboot.%.unsigned : wimboot.%.elf efireloc Makefile
 	$(OBJCOPY) -Obinary $< $@
-	./efireloc $< $@
+	./efireloc -v $< $@
 
 wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
 	$(PESIGN) -h -i $< | $(CUT) -d" " -f2- > $@

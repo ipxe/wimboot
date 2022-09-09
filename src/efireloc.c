@@ -96,6 +96,29 @@ static void * xmalloc ( size_t len ) {
 }
 
 /**
+ * Read from file
+ *
+ * @v fd		File descriptor
+ * @v data		Data
+ * @v len		Length of data
+ */
+/*static void xread ( int fd, void *data, size_t len ) {
+	ssize_t readed;
+
+	readed = read ( fd, data, len );
+	if ( readed < 0 ) {
+		eprintf ( "Could not read %zd bytes: %s\n",
+			  len, strerror ( errno ) );
+		exit ( 1 );
+	}
+	if ( ( size_t ) readed != len ) {
+		eprintf ( "Readed only %zd of %zd bytes\n", readed, len );
+		exit ( 1 );
+	}
+}
+*/
+
+/**
  * Write to file
  *
  * @v fd		File descriptor
@@ -310,7 +333,7 @@ static void generate_pe_reloc ( struct pe_relocs **pe_reltab,
  * @v rel		Relocation entry
  * @v pe_reltab		PE relocation table to fill in
  */
-static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
+static void process_reloc (const struct options * opts,  bfd *bfd __unused, asection *section, arelent *rel,
 			    struct pe_relocs **pe_reltab ) {
 	reloc_howto_type *howto = rel->howto;
 	asymbol *sym = *(rel->sym_ptr_ptr);
@@ -323,15 +346,24 @@ static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
 		 */
 	} else if ( strcmp ( howto->name, "R_X86_64_64" ) == 0 ) {
 		/* Generate an 8-byte PE relocation */
+                if( opts->verbosity ) {
+                     printf( "Generate 8 bytes relocation %lx\n", offset);
+                }
 		generate_pe_reloc ( pe_reltab, offset, 8 );
 	} else if ( ( strcmp ( howto->name, "R_386_32" ) == 0 ) ||
 		    ( strcmp ( howto->name, "R_X86_64_32" ) == 0 ) ||
 		    ( strcmp ( howto->name, "R_X86_64_32S" ) == 0 ) ) {
 		/* Generate a 4-byte PE relocation */
-		generate_pe_reloc ( pe_reltab, offset, 4 );
+                if( opts->verbosity ) {
+                     printf( "Generate 4 bytes relocation %lx\n", offset);
+                }
+                generate_pe_reloc ( pe_reltab, offset, 4 );
 	} else if ( ( strcmp ( howto->name, "R_386_16" ) == 0 ) ||
 		    ( strcmp ( howto->name, "R_X86_64_16" ) == 0 ) ) {
 		/* Generate a 2-byte PE relocation */
+                if( opts->verbosity ) {
+                     printf( "Generate 2 bytes relocation %lx\n", offset);
+                }            
 		generate_pe_reloc ( pe_reltab, offset, 2 );
 	} else if ( ( strcmp ( howto->name, "R_386_PC32" ) == 0 ) ||
 		    ( strcmp ( howto->name, "R_X86_64_PC32" ) == 0 ) ||
@@ -352,7 +384,7 @@ static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
  * @v pe_reltab		PE relocation table
  * @ret size		Size of binary table
  */
-static size_t output_pe_reltab ( int fd, struct pe_relocs *pe_reltab ) {
+static size_t output_pe_reltab (const struct options * opts, int fd, struct pe_relocs *pe_reltab ) {
 	EFI_IMAGE_BASE_RELOCATION header;
 	struct pe_relocs *pe_rel;
 	static uint8_t pad[16];
@@ -369,6 +401,9 @@ static size_t output_pe_reltab ( int fd, struct pe_relocs *pe_reltab ) {
 		size += pad_size;
 		header.VirtualAddress = pe_rel->start_rva;
 		header.SizeOfBlock = size;
+                if ( opts->verbosity ) {
+                     printf( "add reloc record, VirtualAddress=%x, SizeOfBlock=%x\n", header.VirtualAddress, header.SizeOfBlock );
+                }
 		xwrite ( fd, &header, sizeof ( header ) );
 		xwrite ( fd, pe_rel->relocs,
 			 ( num_relocs * sizeof ( uint16_t ) ) );
@@ -385,7 +420,7 @@ static size_t output_pe_reltab ( int fd, struct pe_relocs *pe_reltab ) {
  * @v elf_name		ELF file name
  * @v pe_name		PE file name
  */
-static void efireloc ( const char *elf_name, const char *pe_name ) {
+static void efireloc (const struct options * opts,  const char *elf_name, const char *pe_name ) {
 	struct pe_relocs *pe_reltab = NULL;
 	int fd;
 	EFI_IMAGE_DOS_HEADER *dos;
@@ -446,7 +481,7 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 		/* Add relocations from this section */
 		reltab = read_reltab ( bfd, symtab, section );
 		for ( rel = reltab ; *rel ; rel++ )
-			process_reloc ( bfd, section, *rel, &pe_reltab );
+                     process_reloc (opts,  bfd, section, *rel, &pe_reltab );
 		free ( reltab );
 	}
 
@@ -455,7 +490,7 @@ static void efireloc ( const char *elf_name, const char *pe_name ) {
 
 	/* Generate relocation section */
 	xlseek ( fd, 0, SEEK_END );
-	reloc_len = output_pe_reltab ( fd, pe_reltab );
+	reloc_len = output_pe_reltab (opts, fd, pe_reltab );
 
 	/* Modify image header */
 	*image_size += reloc_len;
@@ -552,7 +587,7 @@ int main ( int argc, char **argv ) {
 	outfile = argv[infile_index + 1];
 
 	/* Add relocation information */
-	efireloc ( infile, outfile );
+	efireloc (&opts, infile, outfile );
 
 	return 0;
 }

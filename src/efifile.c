@@ -129,6 +129,69 @@ static void efi_patch_bcd ( struct vdisk_file *vfile __unused, void *data,
 	}
 }
 
+
+static int
+isbootmgfw( const char *name)
+{
+	char bootarch[32];
+
+	if (strcasecmp(name, "bootmgfw.efi") == 0)
+		return 1;
+	snprintf ( bootarch, sizeof ( bootarch ), "%ls", efi_bootarch() );
+	return strcasecmp(name, bootarch) == 0;
+}
+
+static int
+addfile( const char *name, void *data, size_t len,  void ( * read ) ( struct vdisk_file *file,
+                                                       void *data,
+                                                       size_t offset,
+                                                       size_t len ) ) {
+	struct vdisk_file *vfile;
+
+	vfile = vdisk_add_file ( name, data, len, read );
+
+        /* Check for special-case files */
+	if ( isbootmgfw( name ) ) {
+		DBG ( "...found bootmgfw.efi file %s\n", name );
+		bootmgfw = vfile;
+	} else if ( strcasecmp ( name, "BCD" ) == 0 ) {
+		DBG ( "...found BCD\n" );
+		vdisk_patch_file ( vfile, efi_patch_bcd );
+	} else if ( strlen( name ) > 4 && strcasecmp ( ( name + ( strlen ( name ) - 4 ) ), ".wim" ) == 0 ) {
+		DBG ( "...found WIM file %s\n", name );
+		vdisk_patch_file ( vfile, patch_wim );
+		if ( ( ! bootmgfw ) &&
+		     ( bootmgfw = wim_add_file ( vfile, cmdline_index,
+                                                         bootmgfw_path,
+                                                         efi_bootarch() ) ) ) {
+			DBG ( "...extracted %ls\n", bootmgfw_path );
+		}
+		wim_add_files ( vfile, cmdline_index, efi_wim_paths );
+	}
+	return 0;
+}
+
+static void read_file ( struct vdisk_file *file, void *data, size_t offset,
+			size_t len ) {
+	memcpy ( data, ( file->opaque + offset ), len );
+}
+
+/**
+ * File handler
+ *
+ * @v name              File name
+ * @v data              File data
+ * @v len               Length
+ * @ret rc              Return status code
+ */
+int
+efi_add_file ( const char *name, void *data, size_t len)
+{
+	return addfile(name, data, len, read_file);
+}
+
+
+
 /**
  * Extract files from EFI file system
  *

@@ -21,6 +21,7 @@ SECTIONS {
 	/* Real-mode uninitialised data section */
 	.bss16 ( NOLOAD ) : {
 		_bss16 = .;
+		_handover = .;
 		*(.stack16)
 		*(.stack16.*)
 		*(.bss16)
@@ -59,6 +60,7 @@ SECTIONS {
 		_edata = .;
 		_epayload = .;
 	}
+	_efi_handover_off = (efi_handover - _payload);
 	_text16_len = ABSOLUTE ( _etext16 ) - ABSOLUTE ( _text16 );
 	_data16_len = ABSOLUTE ( _edata16 ) - ABSOLUTE ( _data16 );
 	_text_len = ABSOLUTE ( _etext ) - ABSOLUTE ( _text );
@@ -86,8 +88,10 @@ SECTIONS {
 		*(.stack.*)
 		. = ALIGN ( alignment );
 		_ebss = .;
+		_ehandover = .;
 	}
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
+	_handover_len = ABSOLUTE ( _ehandover ) - ABSOLUTE ( _handover );
 
 	/* Secure Boot Advanced Targeting (SBAT) section */
 	_sbat_pos = ( _payload_pos + _payload_len );
