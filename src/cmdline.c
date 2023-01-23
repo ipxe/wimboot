@@ -66,6 +66,7 @@ void process_cmdline ( char *cmdline ) {
 	char *key;
 	char *value;
 	char *endp;
+	char chr;
 
 	/* Do nothing if we have no command line */
 	if ( ( cmdline == NULL ) || ( cmdline[0] == '\0' ) )
@@ -81,11 +82,11 @@ void process_cmdline ( char *cmdline ) {
 		/* Find value (if any) and end of this argument */
 		key = tmp;
 		value = NULL;
-		while ( *tmp ) {
-			if ( isspace ( *tmp ) ) {
+		while ( ( chr = *tmp ) ) {
+			if ( isspace ( chr ) ) {
 				*(tmp++) = '\0';
 				break;
-			} else if ( *tmp == '=' ) {
+			} else if ( ( chr == '=' ) && ( ! value ) ) {
 				*(tmp++) = '\0';
 				value = tmp;
 			} else {
@@ -124,6 +125,12 @@ void process_cmdline ( char *cmdline ) {
 			die ( "Unrecognised argument \"%s%s%s\"\n", key,
 			      ( value ? "=" : "" ), ( value ? value : "" ) );
 		}
+
+		/* Undo modifications to command line */
+		if ( chr )
+			tmp[-1] = chr;
+		if ( value )
+			value[-1] = '=';
 	}
 
 	/* Show command line (after parsing "quiet" option) */
