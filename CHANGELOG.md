@@ -7,6 +7,8 @@ Changelog
 
 - Fix building with GCC 12
 
+- Fix use of `index=N` when no injected files are present.
+
 ## [v2.7.4] 2022-01-20
 
 - Add [Secure Boot Advanced Targeting (SBAT)][sbat] metadata.
