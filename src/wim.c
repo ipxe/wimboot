@@ -300,7 +300,8 @@ int wim_count ( struct vdisk_file *file, struct wim_header *header,
 	int rc;
 
 	/* Count metadata entries */
-	for ( offset = 0 ; ( offset + sizeof ( entry ) ) <= header->lookup.len ;
+	for ( offset = 0, *count = 0 ;
+	      ( offset + sizeof ( entry ) ) <= header->lookup.len ;
 	      offset += sizeof ( entry ) ) {
 
 		/* Read entry */
