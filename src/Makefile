@@ -72,6 +72,12 @@ WNAPM_FLAGS := $(shell $(WNAPM_TEST) && \
 		 $(ECHO) '-Wno-address-of-packed-member')
 WORKAROUND_CFLAGS += $(WNAPM_FLAGS)
 
+# Inhibit spurious warnings from array bounds checking
+WBOUNDS_TEST = $(CC) -Wno-array-bounds -x c -c /dev/null \
+		     -o /dev/null >/dev/null 2>&1
+WBOUNDS_FLAGS := $(shell $(WBOUNDS_TEST) && $(ECHO) '-Wno-array-bounds')
+WORKAROUND_CFLAGS += $(WBOUNDS_FLAGS)
+
 # Inhibit LTO
 LTO_TEST = $(CC) -fno-lto -x c -c /dev/null -o /dev/null >/dev/null 2>&1
 LTO_FLAGS := $(shell $(LTO_TEST) && $(ECHO) '-fno-lto')
