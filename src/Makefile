@@ -1,4 +1,4 @@
-VERSION := v2.7.4
+VERSION := v2.7.5
 
 SBAT_GENERATION := 1
 

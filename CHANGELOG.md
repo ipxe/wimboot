@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.7.5] 2023-01-25
+
 - Support images compressed using the XPRESS compression scheme.
 
 - Fix building with GCC 12
@@ -222,6 +224,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.7.5]: https://github.com/ipxe/wimboot/releases/tag/v2.7.5
 [v2.7.4]: https://github.com/ipxe/wimboot/releases/tag/v2.7.4
 [v2.7.3]: https://github.com/ipxe/wimboot/releases/tag/v2.7.3
 [v2.7.2]: https://github.com/ipxe/wimboot/releases/tag/v2.7.2
