@@ -25,7 +25,6 @@ jobs:
           sudo apt install -y -o Acquire::Retries=50 pandoc
 
       - name: Get version
-        id: version
         run: |
           echo TAG=${GITHUB_REF/refs\/tags\//} >> ${GITHUB_ENV}
           echo VER=${GITHUB_REF/refs\/tags\/v/} >> ${GITHUB_ENV}
@@ -70,32 +69,9 @@ jobs:
           cat NOTES.md
 
       - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: "${{ env.TAG }} (${{ env.DATE }})"
-          body_path: NOTES.md
-          prerelease: true
-
-      - name: Upload wimboot
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: wimboot
-          asset_name: wimboot
-          asset_content_type: application/octet-stream
-
-      - name: Upload wimboot.i386
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: src/wimboot.i386
-          asset_name: wimboot.i386
-          asset_content_type: application/octet-stream
+        run: |
+          gh release create ${TAG} --verify-tag --prerelease \
+              --title "${TAG} (${DATE})" --notes-file NOTES.md \
+              wimboot src/wimboot.i386
