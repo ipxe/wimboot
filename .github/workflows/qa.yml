@@ -20,7 +20,7 @@ jobs:
         id: check
         if: ${{ env.IMAGES_RSYNC_URI != null }}
         run: |
-          echo "::set-output name=present::true"
+          echo "present=true" >> $GITHUB_OUTPUT
 
   cache:
     name: Image cache
@@ -51,10 +51,10 @@ jobs:
       - name: Construct cache key
         id: key
         run: |
-          echo "::set-output name=hash::${{ hashFiles('.rsync.list') }}"
+          echo "hash=${{ hashFiles('.rsync.list') }}" >> $GITHUB_OUTPUT
 
       - name: Cache images
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: test/images
           key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ steps.key.outputs.hash }}
@@ -96,7 +96,7 @@ jobs:
           make
 
       - name: Fetch images
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: test/images
           key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ needs.cache.outputs.hash }}
