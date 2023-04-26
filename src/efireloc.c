@@ -355,24 +355,19 @@ static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
 static size_t output_pe_reltab ( int fd, struct pe_relocs *pe_reltab ) {
 	EFI_IMAGE_BASE_RELOCATION header;
 	struct pe_relocs *pe_rel;
-	static uint8_t pad[16];
 	unsigned int num_relocs;
 	size_t size;
-	size_t pad_size;
 	size_t total_size = 0;
 
 	for ( pe_rel = pe_reltab ; pe_rel ; pe_rel = pe_rel->next ) {
 		num_relocs = ( ( pe_rel->used_relocs + 1 ) & ~1 );
 		size = ( sizeof ( header ) +
 			 ( num_relocs * sizeof ( uint16_t ) ) );
-		pad_size = ( ( -size ) & ( sizeof ( pad ) - 1 ) );
-		size += pad_size;
 		header.VirtualAddress = pe_rel->start_rva;
 		header.SizeOfBlock = size;
 		xwrite ( fd, &header, sizeof ( header ) );
 		xwrite ( fd, pe_rel->relocs,
 			 ( num_relocs * sizeof ( uint16_t ) ) );
-		xwrite ( fd, pad, pad_size );
 		total_size += size;
 	}
 
