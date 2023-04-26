@@ -324,8 +324,7 @@ static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
 	} else if ( strcmp ( howto->name, "R_X86_64_64" ) == 0 ) {
 		/* Generate an 8-byte PE relocation */
 		generate_pe_reloc ( pe_reltab, offset, 8 );
-	} else if ( ( strcmp ( howto->name, "R_386_32" ) == 0 ) ||
-		    ( strcmp ( howto->name, "R_X86_64_32" ) == 0 ) ) {
+	} else if ( strcmp ( howto->name, "R_386_32" ) == 0 ) {
 		/* Generate a 4-byte PE relocation */
 		generate_pe_reloc ( pe_reltab, offset, 4 );
 	} else if ( ( strcmp ( howto->name, "R_386_16" ) == 0 ) ||
@@ -337,6 +336,10 @@ static void process_reloc ( bfd *bfd __unused, asection *section, arelent *rel,
 		    ( strcmp ( howto->name, "R_X86_64_PLT32" ) == 0 ) ) {
 		/* Skip PC-relative relocations; all relative offsets
 		 * remain unaltered when the object is loaded.
+		 */
+	} else if ( strcmp ( howto->name, "R_X86_64_32" ) == 0 ) {
+		/* Ignore 32-bit relocations within BIOS code in
+		 * hybrid 32-bit BIOS / 64-bit UEFI binaries.
 		 */
 	} else {
 		eprintf ( "Unrecognised relocation type %s\n", howto->name );
