@@ -337,6 +337,7 @@ gdt:
 	.size	gdt, . - gdt
 	.equ	gdt_limit, . - gdt - 1
 
+	.org	0x400
 debug:
 	.long	0			/* Characteristics */
 	.long	0x10d1a884		/* TimeDateStamp */
