@@ -25,7 +25,8 @@ RM		:= rm
 GCAB		:= gcab
 PESIGN		:= pesign
 DIFF		:= diff
-CUT		:= cut
+GREP		:= grep
+XARGS		:= xargs
 BINUTILS_DIR	:= /usr
 BFD_DIR		:= $(BINUTILS_DIR)
 ZLIB_DIR	:= /usr
@@ -111,13 +112,13 @@ wimboot.%.unsigned : wimboot.%.elf efireloc Makefile
 	./efireloc $< $@
 
 wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
-	$(PESIGN) -h -i $< | $(CUT) -d" " -f2- > $@
+	$(PESIGN) -h -i $< | $(XARGS) -n 1 $(ECHO) | $(GREP) -x '[0-9a-f]*' > $@
 
 wimboot.%.efi : wimboot.%.unsigned Makefile
 	$(CP) $< $@
 
 wimboot.%.efi.hash : wimboot.%.efi Makefile
-	$(PESIGN) -h -i $< | $(CUT) -d" " -f2- > $@
+	$(PESIGN) -h -i $< | $(XARGS) -n 1 $(ECHO) | $(GREP) -x '[0-9a-f]*' > $@
 
 wimboot.% : wimboot.%.efi wimboot.%.efi.hash wimboot.%.unsigned.hash Makefile
 	$(DIFF) wimboot.$*.efi.hash wimboot.$*.unsigned.hash
