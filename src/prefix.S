@@ -154,17 +154,6 @@ directory_entry_debug:
 	.equ	data_directory_len, . - data_directory
 	.size	data_directory,	    . - data_directory
 coff_sections:
-	.ascii	".bss16"		/* Name */
-	.byte	0, 0
-	.long	_bss16_len		/* Misc.VirtualSize */
-	.long	( _bss16 - BASE_ADDRESS ) /* VirtualAddress */
-	.long	0			/* SizeOfRawData */
-	.long	0			/* PointerToRawData */
-	.long	0			/* PointerToRelocations */
-	.long	0			/* PointerToLinenumbers */
-	.word	0			/* NumberOfRelocations */
-	.word	0			/* NumberOfLinenumbers */
-	.long	0xc8000080		/* Characteristics */
 	.ascii	".payload"		/* Name */
 	.long	_payload_len		/* Misc.VirtualSize */
 	.long	( _payload - BASE_ADDRESS ) /* VirtualAddress */

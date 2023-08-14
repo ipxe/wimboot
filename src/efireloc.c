@@ -60,7 +60,7 @@
 #define PE_HEADER_LEN 512
 
 /** .reloc section index */
-#define RELOC_SECTION_INDEX 4
+#define RELOC_SECTION_INDEX 3
 
 /** PE relocations */
 struct pe_relocs {
