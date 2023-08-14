@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+#
+# Work around buggy parsing of "-set" option in newer versions of QEMU
+
+import json
+import re
+import os
+import sys
+
+# Replace wrapper binary name
+#
+argv = sys.argv
+argv[0] = os.path.basename(argv[0])
+
+# Identify bootfile URL, if specified
+#
+bootfile = None
+bootfileidx = None
+for idx, arg in enumerate(argv):
+    # Look for "-set netdev.*.bootfile=..."
+    if arg == '-set':
+        m = re.fullmatch(r'netdev\..*\.bootfile=(.+)', argv[idx + 1])
+        if m:
+            # Record bootfile and position within argument list
+            bootfile = m.group(1)
+            bootfileidx = idx
+            break
+
+# Hack bootfile URL into argument list, if applicable
+#
+# We assume that only versions of QEMU that are sufficiently new to
+# handle JSON arguments will have the bug that prevents correct
+# parsing of the "-set" option.
+#
+if bootfile:
+    for idx, arg in enumerate(argv):
+        # Look for "-netdev {json argument}"
+        if arg == '-netdev':
+            try:
+                val = json.loads(argv[idx + 1])
+            except json.JSONDecodeError:
+                continue
+            # Add bootfile to JSON argument
+            val['bootfile'] = bootfile
+            argv[idx + 1] = json.dumps(val)
+            # Strip "-set netdev.*.bootfile=..." from argument list
+            argv[bootfileidx:(bootfileidx + 2)] = []
+            break
+
+# Execute real QEMU binary
+#
+os.execvp(argv[0], argv)

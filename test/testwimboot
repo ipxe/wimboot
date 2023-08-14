@@ -103,6 +103,8 @@ def vm_xml(virttype, name, uuid, memory, uefi, logfile, romfile, booturl):
     x_memory.text = str(memory)
     x_memory.attrib['unit'] = 'MiB'
     x_devices = etree.SubElement(x_domain, 'devices')
+    x_emulator = etree.SubElement(x_devices, 'emulator')
+    x_emulator.text = os.path.abspath('qemu-system-x86_64')
     x_graphics = etree.SubElement(x_devices, 'graphics')
     x_graphics.attrib['type'] = 'spice'
     x_video = etree.SubElement(x_devices, 'video')
