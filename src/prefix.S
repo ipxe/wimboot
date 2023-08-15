@@ -101,9 +101,9 @@ opt_header:
 	.word	opt_magic		/* Magic */
 	.byte	42			/* MajorLinkerVersion */
 	.byte	42			/* MinorLinkerVersion */
-	.long	_text_total_len		/* SizeOfCode */
-	.long	_data_total_len		/* SizeOfInitializedData */
-	.long	_bss_total_len		/* SizeOfUninitializedData */
+	.long	_text_len		/* SizeOfCode */
+	.long	_data_len		/* SizeOfInitializedData */
+	.long	_bss_len		/* SizeOfUninitializedData */
 	.long	( efi_main - BASE_ADDRESS ) /* AddressOfEntryPoint */
 	.long	( _text - BASE_ADDRESS ) /* BaseOfCode */
 #if __x86_64__
@@ -154,16 +154,28 @@ directory_entry_debug:
 	.equ	data_directory_len, . - data_directory
 	.size	data_directory,	    . - data_directory
 coff_sections:
-	.ascii	".payload"		/* Name */
-	.long	_payload_len		/* Misc.VirtualSize */
-	.long	( _payload - BASE_ADDRESS ) /* VirtualAddress */
-	.long	_payload_len		/* SizeOfRawData */
-	.long	_payload_pos		/* PointerToRawData */
+	.ascii	".data"			/* Name */
+	.byte	0, 0, 0
+	.long	_data_len		/* Misc.VirtualSize */
+	.long	( _data - BASE_ADDRESS ) /* VirtualAddress */
+	.long	_data_len		/* SizeOfRawData */
+	.long	_data_pos		/* PointerToRawData */
 	.long	0			/* PointerToRelocations */
 	.long	0			/* PointerToLinenumbers */
 	.word	0			/* NumberOfRelocations */
 	.word	0			/* NumberOfLinenumbers */
-	.long	0xe80000e0		/* Characteristics */
+	.long	0xc8000040		/* Characteristics */
+	.ascii	".text"			/* Name */
+	.byte	0, 0, 0
+	.long	_text_len		/* Misc.VirtualSize */
+	.long	( _text - BASE_ADDRESS ) /* VirtualAddress */
+	.long	_text_len		/* SizeOfRawData */
+	.long	_text_pos		/* PointerToRawData */
+	.long	0			/* PointerToRelocations */
+	.long	0			/* PointerToLinenumbers */
+	.word	0			/* NumberOfRelocations */
+	.word	0			/* NumberOfLinenumbers */
+	.long	0x68000020		/* Characteristics */
 	.ascii	".bss"			/* Name */
 	.byte	0, 0, 0, 0
 	.long	_bss_len		/* Misc.VirtualSize */

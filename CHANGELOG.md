@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+- Use separate .text and .data sections for W^X compatibility.
+
 ## [v2.7.5] 2023-01-25
 
 - Support images compressed using the XPRESS compression scheme.

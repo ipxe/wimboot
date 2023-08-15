@@ -30,39 +30,39 @@ SECTIONS {
 	}
 	_bss16_len = ABSOLUTE ( _ebss16 ) - ABSOLUTE ( _bss16 );
 
-	/* Payload section */
-	_payload_pos = ( _prefix_pos + _prefix_len );
-	.payload : AT ( _payload_pos ) {
+	/* Data (and 16-bit BIOS text) section */
+	_data_pos = ( _prefix_pos + _prefix_len );
+	.data : AT ( _data_pos ) {
+		_data = .;
 		_payload = .;
 		/* Portions that must be accessible in 16-bit modes */
-		_text16 = .;
 		*(.text16)
 		*(.text16.*)
-		_etext16 = .;
-		_data16 = .;
 		*(.rodata16)
 		*(.rodata16.*)
 		*(.data16)
 		*(.data16.*)
-		_edata16 = .;
 		/* Portions that need not be accessible in 16-bit modes */
-		_text = .;
-		*(.text)
-		*(.text.*)
-		_etext = .;
-		_data = .;
 		*(.rodata)
 		*(.rodata.*)
 		*(.data)
 		*(.data.*)
 		. = ALIGN ( alignment );
 		_edata = .;
-		_epayload = .;
 	}
-	_text16_len = ABSOLUTE ( _etext16 ) - ABSOLUTE ( _text16 );
-	_data16_len = ABSOLUTE ( _edata16 ) - ABSOLUTE ( _data16 );
-	_text_len = ABSOLUTE ( _etext ) - ABSOLUTE ( _text );
 	_data_len = ABSOLUTE ( _edata ) - ABSOLUTE ( _data );
+
+	/* Text (excluding 16-bit BIOS text) section */
+	_text_pos = ( _data_pos + _data_len );
+	.text : AT ( _text_pos ) {
+		_text = .;
+		*(.text)
+		*(.text.*)
+		. = ALIGN ( alignment );
+		_epayload = .;
+		_etext = .;
+	}
+	_text_len = ABSOLUTE ( _etext ) - ABSOLUTE ( _text );
 	_payload_len = ABSOLUTE ( _epayload ) - ABSOLUTE ( _payload );
 
 	/* bootmgr.exe hardcodes the address 0x30000 for use as a
@@ -90,7 +90,7 @@ SECTIONS {
 	_bss_len = ABSOLUTE ( _ebss ) - ABSOLUTE ( _bss );
 
 	/* Secure Boot Advanced Targeting (SBAT) section */
-	_sbat_pos = ( _payload_pos + _payload_len );
+	_sbat_pos = ( _text_pos + _text_len );
 	.sbat : AT ( _sbat_pos ) {
 		_sbat = .;
 		*(.sbat)
@@ -107,10 +107,6 @@ SECTIONS {
 	_reloc = .;
 
 	_end = .;
-
-	_text_total_len = ( _text_len + _text16_len );
-	_data_total_len = ( _data_len + _data16_len );
-	_bss_total_len = ( _bss_len + _bss16_len );
 
 	/* Symbols required by i386.x86_64 objects */
 	__i386__start = _start;
