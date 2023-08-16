@@ -7,6 +7,15 @@ SECTIONS {
 	. = 0x20000;
 	_start = .;
 
+	/* bootmgr.exe hardcodes the address 0x30000 for use as a
+	 * buffer accessible by real-mode code.  We can't fit
+	 * everything below this region, so we explicitly verify that
+	 * all BIOS-mode code and initialised data fits below this
+	 * region, and choose to place .bss above it.
+	 */
+	_forbidden_start = 0x30000;
+	_forbidden_end = 0x40000;
+
 	/* bzImage prefix */
 	_prefix_pos = 0;
 	.prefix : AT ( _prefix_pos ) {
@@ -56,6 +65,10 @@ SECTIONS {
 	_text_pos = ( _data_pos + _data_len );
 	.text : AT ( _text_pos ) {
 		_text = .;
+		*.i386.*(.text)
+		*.i386.*(.text.*)
+		ASSERT ( ABSOLUTE ( . ) <= ABSOLUTE ( _forbidden_start ),
+			 "Binary is too large" );
 		*(.text)
 		*(.text.*)
 		. = ALIGN ( alignment );
@@ -65,19 +78,9 @@ SECTIONS {
 	_text_len = ABSOLUTE ( _etext ) - ABSOLUTE ( _text );
 	_payload_len = ABSOLUTE ( _epayload ) - ABSOLUTE ( _payload );
 
-	/* bootmgr.exe hardcodes the address 0x30000 for use as a
-	 * buffer accessible by real-mode code.  We can't fit our
-	 * .text, .data, and .bss below this region, so explicitly
-	 * place the .bss higher in memory.
-	 */
-	_forbidden_start = 0x30000;
-	_forbidden_end = 0x40000;
-
 	/* Uninitialised data section */
 	.bss ( NOLOAD ) : {
 		_bss = .;
-		ASSERT ( ABSOLUTE ( . ) <= ABSOLUTE ( _forbidden_start ),
-			 "Binary is too large" );
 		. = ABSOLUTE ( _forbidden_end );
 		*(.bss)
 		*(.bss.*)
