@@ -128,7 +128,7 @@ opt_header:
 	.long	_prefix_len		/* SizeOfHeaders */
 	.long	0			/* Checksum */
 	.word	0x0a			/* Subsystem */
-	.word	0			/* DllCharacteristics */
+	.word	0x0100			/* DllCharacteristics */
 #if __x86_64__
 	.quad	0			/* SizeOfStackReserve */
 	.quad	0			/* SizeOfStackCommit */
