@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.7.6] 2023-08-16
+
 - Use separate .text and .data sections for W^X compatibility.
 
 ## [v2.7.5] 2023-01-25
@@ -226,6 +228,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.7.6]: https://github.com/ipxe/wimboot/releases/tag/v2.7.6
 [v2.7.5]: https://github.com/ipxe/wimboot/releases/tag/v2.7.5
 [v2.7.4]: https://github.com/ipxe/wimboot/releases/tag/v2.7.4
 [v2.7.3]: https://github.com/ipxe/wimboot/releases/tag/v2.7.3
