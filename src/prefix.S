@@ -39,6 +39,9 @@
 /** Sector size */
 #define SECTOR_SIZE 512
 
+/** Setup code length */
+#define SETUP_LEN ( ( SETUP_SECTS + 1 ) * SECTOR_SIZE )
+
 /** Protected-mode code will be loaded high */
 #define LOADED_HIGH 0x01
 
@@ -112,8 +115,8 @@ opt_header:
 	.long	( _data - BASE_ADDRESS ) /* BaseOfData */
 	.long	BASE_ADDRESS		/* ImageBase */
 #endif
-	.long	0x200			/* SectionAlignment */
-	.long	0x200			/* FileAlignment */
+	.long	0x1000			/* SectionAlignment */
+	.long	0x1000			/* FileAlignment */
 	.word	0			/* MajorOperatingSystemVersion */
 	.word	0			/* MinorOperatingSystemVersion */
 	.word	0			/* MajorImageVersion */
@@ -301,7 +304,7 @@ setup:
 	rep stosb
 
 	/* Copy payload to runtime address */
-	movl	$LOADED_HIGH_ADDRESS, %esi
+	movl	$( LOADED_HIGH_ADDRESS + _payload_pos - SETUP_LEN ), %esi
 	movl	$_payload, %edi
 	movl	$_payload_len, %ecx
 	cld
@@ -361,4 +364,4 @@ debug_rsds:
 	.equ	debug_rsds_len, . - debug_rsds
 	.size	debug_rsds,	. - debug_rsds
 
-	.org	( ( SETUP_SECTS + 1 ) * SECTOR_SIZE )
+	.org	SETUP_LEN

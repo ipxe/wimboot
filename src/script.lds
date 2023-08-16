@@ -1,7 +1,7 @@
 SECTIONS {
 
-	/* Align sections to keep PE tools happy */
-	alignment = 512;
+	/* Align sections to allow for page-level runtime protection */
+	alignment = 0x1000;
 
 	/* Virtual addresses start at 0x20000 */
 	. = 0x20000;
@@ -40,7 +40,8 @@ SECTIONS {
 	_bss16_len = ABSOLUTE ( _ebss16 ) - ABSOLUTE ( _bss16 );
 
 	/* Data (and 16-bit BIOS text) section */
-	_data_pos = ( _prefix_pos + _prefix_len );
+	_payload_pos = ( _prefix_pos + _prefix_len );
+	_data_pos = _payload_pos;
 	.data : AT ( _data_pos ) {
 		_data = .;
 		_payload = .;
