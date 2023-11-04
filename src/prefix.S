@@ -119,7 +119,7 @@ opt_header:
 	.long	0x1000			/* FileAlignment */
 	.word	0			/* MajorOperatingSystemVersion */
 	.word	0			/* MinorOperatingSystemVersion */
-	.word	0			/* MajorImageVersion */
+	.word	1			/* MajorImageVersion */
 	.word	0			/* MinorImageVersion */
 	.word	0			/* MajorSubsystemVersion */
 	.word	0			/* MinorSubsystemVersion */
