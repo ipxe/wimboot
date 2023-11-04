@@ -614,6 +614,19 @@ void vdisk_read ( uint64_t lba, unsigned int count, void *data ) {
 }
 
 /**
+ * Read virtual file from memory
+ *
+ * @v file		Virtual file
+ * @v data		Data buffer
+ * @v offset		Offset
+ * @v len		Length
+ */
+void vdisk_read_mem_file ( struct vdisk_file *file, void *data,
+						   size_t offset, size_t len ) {
+	memcpy ( data, ( file->opaque + offset ), len );
+}
+
+/**
  * Add file to virtual disk
  *
  * @v name		Name
