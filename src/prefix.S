@@ -71,6 +71,7 @@
 	.equ	opt_magic, 0x10b
 #endif
 
+	.section ".note.GNU-stack", "", @progbits
 	.text
 	.code16
 	.arch	i386

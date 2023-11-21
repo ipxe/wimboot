@@ -31,6 +31,7 @@
 #define KC_CMD 0x64
 #define KC_CMD_RESET 0xfe
 
+	.section ".note.GNU-stack", "", @progbits
 	.arch	i386
 	.code32
 

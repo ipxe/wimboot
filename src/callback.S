@@ -47,6 +47,7 @@
 /** Paging bit in CR0 */
 #define CR0_PG 0x80000000
 
+	.section ".note.GNU-stack", "", @progbits
 	.arch	i386
 	.code32
 
