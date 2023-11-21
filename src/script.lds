@@ -1,3 +1,5 @@
+ENTRY ( efi_main )
+
 SECTIONS {
 
 	/* Align sections to allow for page-level runtime protection */
