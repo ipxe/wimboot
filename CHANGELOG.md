@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+- Update to latest EDK2 headers.
+
 ## [v2.7.6] 2023-08-16
 
 - Use separate .text and .data sections for W^X compatibility.
