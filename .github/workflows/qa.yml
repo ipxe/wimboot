@@ -85,7 +85,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
-                           binutils-dev libiberty-dev pesign gcab \
+                           pesign gcab \
                            qemu-system-x86 ovmf \
                            python3-libvirt python3-lxml python3-pil \
                            python3-qrcode python3-yaml python3-zbar

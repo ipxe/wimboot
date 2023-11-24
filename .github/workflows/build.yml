@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
-                           binutils-dev libiberty-dev pesign gcab
+                           pesign gcab
       - name: Build
         working-directory: src
         run: |

@@ -27,9 +27,6 @@ PESIGN		:= pesign
 DIFF		:= diff
 GREP		:= grep
 XARGS		:= xargs
-BINUTILS_DIR	:= /usr
-BFD_DIR		:= $(BINUTILS_DIR)
-ZLIB_DIR	:= /usr
 
 HOST_CFLAGS += -Wall -W -Werror
 
@@ -107,9 +104,13 @@ wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
 	$(LD) -m elf_$* -T script.lds -o $@ -q -Map wimboot.$*.map \
 		prefix.$*.o lib.$*.a
 
-wimboot.%.unsigned : wimboot.%.elf efireloc Makefile
+wimboot.i386.unsigned : wimboot.i386.elf elf2efi32 Makefile
 	$(OBJCOPY) -Obinary $< $@
-	./efireloc $< $@
+	./elf2efi32 --hybrid $< $@
+
+wimboot.x86_64.unsigned : wimboot.x86_64.elf elf2efi64 Makefile
+	$(OBJCOPY) -Obinary $< $@
+	./elf2efi64 --hybrid $< $@
 
 wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
 	$(PESIGN) -h -i $< | $(XARGS) -n 1 $(ECHO) | $(GREP) -x '[0-9a-f]*' > $@
@@ -177,13 +178,11 @@ lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 #
 # EFI relocator
 
-EFIRELOC_CFLAGS := -I$(BINUTILS_DIR)/include -I$(BFD_DIR)/include \
-		   -I$(ZLIB_DIR)/include -idirafter . -DEFI_HOSTONLY
-EFIRELOC_LDFLAGS := -L$(BINUTILS_DIR)/lib -L$(BFD_DIR)/lib -L$(ZLIB_DIR)/lib \
-		    -lbfd -ldl -liberty -lz -Wl,--no-warn-search-mismatch
+elf2efi32 : elf2efi.c Makefile
+	$(CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET32 $< -o $@
 
-efireloc : efireloc.c Makefile
-	$(CC) $(HOST_CFLAGS) $(EFIRELOC_CFLAGS) $< $(EFIRELOC_LDFLAGS) -o $@
+elf2efi64 : elf2efi.c Makefile
+	$(CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET64 $< -o $@
 
 ###############################################################################
 #
@@ -191,7 +190,7 @@ efireloc : efireloc.c Makefile
 
 clean :
 	$(RM) -f *.s *.o *.a *.elf *.map
-	$(RM) -f efireloc
+	$(RM) -f elf2efi32 elf2efi64
 	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
 	$(RM) -f wimboot.i386.unsigned wimboot.x86_64.unsigned
 	$(RM) -f wimboot.i386.efi wimboot.x86_64.efi wimboot.cab
