@@ -64,8 +64,8 @@ sub try_import_file {
 	s/\s*$//g;
 	chomp;
 	# Update include lines, and record included files
-	if ( s/^\#include\s+[<\"](\S+)[>\"]/\#include "efi\/$1"/ ) {
-	  push @dependencies, $1;
+	if ( s/^(\s*\#include\s+)[<\"](\S+)[>\"]/$1 "efi\/$2"/ ) {
+	  push @dependencies, $2;
 	}
 	# Write out line
 	print $outfh "$_\n";
