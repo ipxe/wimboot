@@ -178,7 +178,7 @@ lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 # EFI relocator
 
 EFIRELOC_CFLAGS := -I$(BINUTILS_DIR)/include -I$(BFD_DIR)/include \
-		   -I$(ZLIB_DIR)/include -idirafter .
+		   -I$(ZLIB_DIR)/include -idirafter . -DEFI_HOSTONLY
 EFIRELOC_LDFLAGS := -L$(BINUTILS_DIR)/lib -L$(BFD_DIR)/lib -L$(ZLIB_DIR)/lib \
 		    -lbfd -ldl -liberty -lz -Wl,--no-warn-search-mismatch
 
