@@ -1,94 +1,137 @@
+# Versioning information
+#
 VERSION := v2.7.6
-
 SBAT_GENERATION := 1
 
+# Abstract target-independent objects
+#
 OBJECTS := prefix.o startup.o callback.o main.o vsprintf.o string.o peloader.o
 OBJECTS += int13.o vdisk.o cpio.o stdio.o lznt1.o xca.o die.o efi.o efimain.o
 OBJECTS += efiguid.o efifile.o efipath.o efiboot.o efiblock.o cmdline.o
 OBJECTS += wimpatch.o huffman.o lzx.o wim.o wimfile.o pause.o sha1.o cookie.o
 OBJECTS += paging.o memmap.o
 
+# Target-dependent objects
+#
 OBJECTS_i386 := $(patsubst %.o,%.i386.o,$(OBJECTS))
 OBJECTS_x86_64 := $(patsubst %.o,%.x86_64.o,$(OBJECTS))
 OBJECTS_i386_x86_64 := $(patsubst %.o,%.i386.x86_64.o,$(OBJECTS))
 
+# Header files
+#
 HEADERS := $(wildcard *.h)
 
-HOST_CC		:= $(CC)
-AS		:= $(AS)
-ECHO		:= echo
-OBJCOPY 	:= objcopy
-AR		:= ar
-RANLIB		:= ranlib
-CP		:= cp
-RM		:= rm
-GCAB		:= gcab
-PESIGN		:= pesign
-DIFF		:= diff
-GREP		:= grep
-XARGS		:= xargs
+# Common build tools
+#
+ECHO		= echo
+CP		= cp
+RM		= rm
+GCAB		= gcab
+PESIGN		= pesign
+DIFF		= diff
+GREP		= grep
+XARGS		= xargs
 
-HOST_CFLAGS += -Wall -W -Werror
+# Build tools for host binaries
+#
+HOST_CC		= $(CC)
 
-CFLAGS += -Os -ffreestanding -Wall -W -Werror -nostdinc -I. -fshort-wchar
-CFLAGS += -DVERSION="\"$(VERSION)\""
-CFLAGS += -DSBAT_GENERATION="\"$(SBAT_GENERATION)\""
+# Build tools for i386 target
+#
+CC_i386		= $(CROSS_i386)gcc
+AS_i386		= $(CROSS_i386)as
+LD_i386		= $(CROSS_i386)ld
+AR_i386		= $(CROSS_i386)ar
+RANLIB_i386	= $(CROSS_i386)ranlib
+OBJCOPY_i386	= $(CROSS_i386)objcopy
 
-CFLAGS_i386 += -m32 -march=i386 -malign-double -fno-pic
-CFLAGS_x86_64 += -m64 -mno-red-zone -fpie
+# Build tools for x86_64 target
+#
+CC_x86_64	= $(CROSS_x86_64)gcc
+AS_x86_64	= $(CROSS_x86_64)as
+LD_x86_64	= $(CROSS_x86_64)ld
+AR_x86_64	= $(CROSS_x86_64)ar
+RANLIB_x86_64	= $(CROSS_x86_64)ranlib
+OBJCOPY_x86_64	= $(CROSS_x86_64)objcopy
+
+# Build flags for host binaries
+#
+HOST_CFLAGS	+= -Wall -W -Werror
+
+# Build flags for all targets
+#
+CFLAGS		+= -Os -ffreestanding -Wall -W -Werror
+CFLAGS		+= -nostdinc -I. -fshort-wchar
+CFLAGS		+= -DVERSION="\"$(VERSION)\""
+CFLAGS		+= -DSBAT_GENERATION="\"$(SBAT_GENERATION)\""
+CFLAGS		+= -include compiler.h
+ifneq ($(DEBUG),)
+CFLAGS		+= -DDEBUG=$(DEBUG)
+endif
+CFLAGS		+= $(EXTRA_CFLAGS)
+
+# Build flags for i386 target
+#
+CFLAGS_i386	:= -m32 -march=i386 -malign-double -fno-pic
+ASFLAGS_i386	:= --32
+LDFLAGS_i386	:= -m elf_i386
+
+# Build flags for x86_64 target
+#
+CFLAGS_x86_64	:= -m64 -mno-red-zone -fpie
+ASFLAGS_x86_64	:= --64
+LDFLAGS_x86_64	:= -m elf_x86_64
+
+# Run a test compilation and discard any output
+#
+CC_TEST		= $(CC_$(1)) $(CFLAGS) $(CFLAGS_$(1)) \
+		  -x c -c - -o /dev/null >/dev/null 2>&1
+
+# Test for supported compiler flags
+#
+CFLAGS_TEST	= $(shell $(CC_TEST) $(2) </dev/null && $(ECHO) '$(2)')
 
 # Enable stack protection if available
 #
-SPG_TEST = $(CC) -fstack-protector-strong -mstack-protector-guard=global \
-		 -x c -c /dev/null -o /dev/null >/dev/null 2>&1
-SPG_FLAGS := $(shell $(SPG_TEST) && $(ECHO) '-fstack-protector-strong ' \
-					    '-mstack-protector-guard=global')
-CFLAGS += $(SPG_FLAGS)
+CFLAGS_SPG	= $(call CFLAGS_TEST,$(1),-fstack-protector-strong \
+					  -mstack-protector-guard=global)
 
 # Inhibit unwanted debugging information
-CFI_TEST = $(CC) -fno-dwarf2-cfi-asm -fno-exceptions -fno-unwind-tables \
-		 -fno-asynchronous-unwind-tables -x c -c /dev/null \
-		 -o /dev/null >/dev/null 2>&1
-CFI_FLAGS := $(shell $(CFI_TEST) && \
-	       $(ECHO) '-fno-dwarf2-cfi-asm -fno-exceptions ' \
-		    '-fno-unwind-tables -fno-asynchronous-unwind-tables')
-WORKAROUND_CFLAGS += $(CFI_FLAGS)
-
-# Add -maccumulate-outgoing-args if required by this version of gcc
-MS_ABI_TEST_CODE := extern void __attribute__ (( ms_abi )) ms_abi(); \
-		    void sysv_abi ( void ) { ms_abi(); }
-MS_ABI_TEST = $(ECHO) '$(MS_ABI_TEST_CODE)' | \
-	      $(CC) -m64 -mno-accumulate-outgoing-args -x c -c - -o /dev/null \
-		    >/dev/null 2>&1
-MS_ABI_FLAGS := $(shell $(MS_ABI_TEST) || $(ECHO) '-maccumulate-outgoing-args')
-WORKAROUND_CFLAGS += $(MS_ABI_FLAGS)
+#
+CFLAGS_CFI	= $(call CFLAGS_TEST,$(1),-fno-dwarf2-cfi-asm \
+					  -fno-exceptions \
+					  -fno-unwind-tables \
+					  -fno-asynchronous-unwind-tables)
 
 # Inhibit warnings from taking address of packed struct members
-WNAPM_TEST = $(CC) -Wno-address-of-packed-member -x c -c /dev/null \
-		   -o /dev/null >/dev/null 2>&1
-WNAPM_FLAGS := $(shell $(WNAPM_TEST) && \
-		 $(ECHO) '-Wno-address-of-packed-member')
-WORKAROUND_CFLAGS += $(WNAPM_FLAGS)
+#
+CFLAGS_WNAPM	= $(call CFLAGS_TEST,$(1),-Wno-address-of-packed-member)
 
 # Inhibit spurious warnings from array bounds checking
-WBOUNDS_TEST = $(CC) -Wno-array-bounds -x c -c /dev/null \
-		     -o /dev/null >/dev/null 2>&1
-WBOUNDS_FLAGS := $(shell $(WBOUNDS_TEST) && $(ECHO) '-Wno-array-bounds')
-WORKAROUND_CFLAGS += $(WBOUNDS_FLAGS)
+#
+CFLAGS_WNAB	= $(call CFLAGS_TEST,$(1),-Wno-array-bounds)
 
 # Inhibit LTO
-LTO_TEST = $(CC) -fno-lto -x c -c /dev/null -o /dev/null >/dev/null 2>&1
-LTO_FLAGS := $(shell $(LTO_TEST) && $(ECHO) '-fno-lto')
-WORKAROUND_CFLAGS += $(LTO_FLAGS)
+#
+CFLAGS_NLTO	= $(call CFLAGS_TEST,$(1),-fno-lto)
 
-CFLAGS += $(WORKAROUND_CFLAGS)
-CFLAGS += $(EXTRA_CFLAGS)
+# Add -maccumulate-outgoing-args if required
+#
+MS_ABI_TEST_CODE := extern void __attribute__ (( ms_abi )) ms_abi(); \
+		    void sysv_abi ( void ) { ms_abi(); }
+define CFLAGS_MS_ABI
+$(shell $(CC_TEST) -maccumulate-outgoing-args </dev/null && \
+	( $(ECHO) '$(MS_ABI_TEST_CODE)' | \
+	  $(CC_TEST) -mno-accumulate-outgoing-args || \
+	  $(ECHO) '-maccumulate-outgoing-args' ))
+endef
 
-ifneq ($(DEBUG),)
-CFLAGS += -DDEBUG=$(DEBUG)
-endif
-
-CFLAGS += -include compiler.h
+# Conditional build flags
+#
+CFLAGS_COND	= $(CFLAGS_SPG) $(CFLAGS_CFI) $(CFLAGS_WNAPM) $(CFLAGS_WNAB) \
+		  $(CFLAGS_NLTO) $(CFLAGS_MS_ABI)
+CFLAGS_i386	+= $(call CFLAGS_COND,i386)
+CFLAGS_x86_64	+= $(call CFLAGS_COND,x86_64)
 
 ###############################################################################
 #
@@ -100,16 +143,18 @@ wimboot : wimboot.x86_64 Makefile
 	$(CP) $< $@
 	$(CP) $@ ../$@
 
-wimboot.%.elf : prefix.%.o lib.%.a script.lds Makefile
-	$(LD) -m elf_$* -T script.lds -o $@ -q -Map wimboot.$*.map \
-		prefix.$*.o lib.$*.a
+wimboot.%.elf : lib.%.a script.lds Makefile
+	$(LD_$*) $(LDFLAGS) $(LDFLAGS_$*) -T script.lds -o $@ -q \
+		-Map wimboot.$*.map prefix.$*.o lib.$*.a
 
-wimboot.i386.unsigned : wimboot.i386.elf elf2efi32 Makefile
-	$(OBJCOPY) -Obinary $< $@
+wimboot.i386.unsigned : \
+wimboot.%.unsigned : wimboot.%.elf elf2efi32 Makefile
+	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi32 --hybrid $< $@
 
-wimboot.x86_64.unsigned : wimboot.x86_64.elf elf2efi64 Makefile
-	$(OBJCOPY) -Obinary $< $@
+wimboot.x86_64.unsigned : \
+wimboot.%.unsigned : wimboot.%.elf elf2efi64 Makefile
+	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi64 --hybrid $< $@
 
 wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
@@ -133,56 +178,56 @@ wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi Makefile
 # i386 objects
 
 %.i386.s : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) $(CFLAGS_i386) -DASSEMBLY -Ui386 -E $< -o $@
+	$(CC_i386) $(CFLAGS) $(CFLAGS_i386) -DASSEMBLY -Ui386 -E $< -o $@
 
 %.i386.s : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) $(CFLAGS_i386) -S $< -o $@
+	$(CC_i386) $(CFLAGS) $(CFLAGS_i386) -S $< -o $@
 
 %.i386.o : %.i386.s i386.i Makefile
-	$(AS) --32 i386.i $< -o $@
+	$(AS_i386) $(ASFLAGS) $(ASFLAGS_i386) i386.i $< -o $@
 
 lib.i386.a : $(OBJECTS_i386) Makefile
 	$(RM) -f $@
-	$(AR) r $@ $(OBJECTS_i386)
-	$(RANLIB) $@
+	$(AR_i386) r $@ $(OBJECTS_i386)
+	$(RANLIB_i386) $@
 
 ###############################################################################
 #
 # i386 objects to be linked into an x86_64 binary
 
 %.i386.x86_64.raw.o : %.i386.s i386.i Makefile
-	$(AS) --64 i386.i $< -o $@
+	$(AS_x86_64) $(ASFLAGS) $(ASFLAGS_x86_64) i386.i $< -o $@
 
 %.i386.x86_64.o : %.i386.x86_64.raw.o Makefile
-	$(OBJCOPY) --prefix-symbols=__i386_ $< $@
+	$(OBJCOPY_x86_64) --prefix-symbols=__i386_ $< $@
 
 ###############################################################################
 #
 # x86_64 objects
 
 %.x86_64.s : %.S $(HEADERS) Makefile
-	$(CC) $(CFLAGS) $(CFLAGS_x86_64) -DASSEMBLY -Ui386 -E $< -o $@
+	$(CC_x86_64) $(CFLAGS) $(CFLAGS_x86_64) -DASSEMBLY -Ui386 -E $< -o $@
 
 %.x86_64.s : %.c $(HEADERS) Makefile
-	$(CC) $(CFLAGS) $(CFLAGS_x86_64) -S $< -o $@
+	$(CC_x86_64) $(CFLAGS) $(CFLAGS_x86_64) -S $< -o $@
 
 %.x86_64.o : %.x86_64.s x86_64.i Makefile
-	$(AS) --64 x86_64.i $< -o $@
+	$(AS_x86_64) $(ASFLAGS) $(ASFLAGS_x86_64) x86_64.i $< -o $@
 
 lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 	$(RM) -f $@
-	$(AR) r $@ $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64)
-	$(RANLIB) $@
+	$(AR_x86_64) r $@ $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64)
+	$(RANLIB_x86_64) $@
 
 ###############################################################################
 #
 # EFI relocator
 
 elf2efi32 : elf2efi.c Makefile
-	$(CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET32 $< -o $@
+	$(HOST_CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET32 $< -o $@
 
 elf2efi64 : elf2efi.c Makefile
-	$(CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET64 $< -o $@
+	$(HOST_CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET64 $< -o $@
 
 ###############################################################################
 #
@@ -191,8 +236,8 @@ elf2efi64 : elf2efi.c Makefile
 clean :
 	$(RM) -f *.s *.o *.a *.elf *.map
 	$(RM) -f elf2efi32 elf2efi64
-	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
-	$(RM) -f wimboot.i386.unsigned wimboot.x86_64.unsigned
-	$(RM) -f wimboot.i386.efi wimboot.x86_64.efi wimboot.cab
+	$(RM) -f wimboot.i386 wimboot.i386.*
+	$(RM) -f wimboot.x86_64 wimboot.x86_64.*
+	$(RM) -f wimboot wimboot.cab
 
 .DELETE_ON_ERROR :
