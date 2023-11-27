@@ -115,25 +115,10 @@ void * memmove ( void *dest, const void *src, size_t len ) {
  * @ret dest		Destination address
  */
 void * memset ( void *dest, int c, size_t len ) {
-	void *edi = dest;
-	int eax = c;
-	int discard_ecx;
+	uint8_t *bytes = dest;
 
-	/* Expand byte to whole dword */
-	eax |= ( eax << 8 );
-	eax |= ( eax << 16 );
-
-	/* Perform dword-based set for bulk, then byte-based for remainder */
-	__asm__ __volatile__ ( "rep stosl"
-			       : "=&D" ( edi ), "=&a" ( eax ),
-				 "=&c" ( discard_ecx )
-			       : "0" ( edi ), "1" ( eax ), "2" ( len >> 2 )
-			       : "memory" );
-	__asm__ __volatile__ ( "rep stosb"
-			       : "=&D" ( edi ), "=&a" ( eax ),
-				 "=&c" ( discard_ecx )
-			       : "0" ( edi ), "1" ( eax ), "2" ( len & 3 )
-			       : "memory" );
+	while ( len-- )
+		*(bytes++) = c;
 	return dest;
 }
 
