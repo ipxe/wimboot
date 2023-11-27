@@ -30,6 +30,8 @@
 #include "int13.h"
 #include "vdisk.h"
 
+#if defined(__i386__) || defined(__x86_64__)
+
 /** Emulated drive number */
 static int vdisk_drive;
 
@@ -223,3 +225,5 @@ void emulate_int13 ( struct bootapp_callback_params *params ) {
 		}
 	}
 }
+
+#endif /* defined(__i386__) || defined(__x86_64__) */

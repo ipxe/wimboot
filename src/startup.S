@@ -32,6 +32,9 @@
 #define KC_CMD_RESET 0xfe
 
 	.section ".note.GNU-stack", "", @progbits
+
+#if defined(__i386__) || defined(__x86_64__)
+
 	.arch	i386
 	.code32
 
@@ -127,3 +130,5 @@ _stack:
 	.space	( 64 * 1024 )
 	.size	_stack, . - _stack
 _estack:
+
+#endif /* defined(__i386__) || defined(__x86_64__) */

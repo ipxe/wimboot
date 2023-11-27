@@ -48,6 +48,9 @@
 #define CR0_PG 0x80000000
 
 	.section ".note.GNU-stack", "", @progbits
+
+#if defined(__i386__) || defined(__x86_64__)
+
 	.arch	i386
 	.code32
 
@@ -226,3 +229,5 @@ _rmstack:
 	.space	8192
 	.size	_rmstack, . - _rmstack
 _ermstack:
+
+#endif /* defined(__i386__) || defined(__x86_64__) */

@@ -62,13 +62,13 @@
 
 	.section ".note.GNU-stack", "", @progbits
 	.text
-	.code16
-	.arch	i386
-	.org	0
 	.section ".prefix", "ax", @progbits
-
 	.org	0
 _prefix:
+
+#if defined(__i386__) || defined(__x86_64__)
+
+	.arch	i386
 
 	.org	0x1f1
 setup_sects:
@@ -119,6 +119,7 @@ version_string:
 	.asciz	VERSION
 
 	/* Setup code */
+	.code16
 setup:
 	/* Reset %cs so that labels work */
 	pushw	%ds
@@ -195,5 +196,7 @@ gdt:
 	.byte	0, 0x93, 0xcf, 0	
 	.size	gdt, . - gdt
 	.equ	gdt_limit, . - gdt - 1
+
+#endif
 
 	.org	SETUP_LEN

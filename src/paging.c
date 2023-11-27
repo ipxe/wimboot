@@ -32,6 +32,8 @@
 #include "memmap.h"
 #include "paging.h"
 
+#if defined(__i386__) || defined(__x86_64__)
+
 /** Virtual address used as a 2MB window during relocation */
 #define COPY_WINDOW 0x200000
 
@@ -253,3 +255,5 @@ uint64_t relocate_memory_high ( void *data, size_t len ) {
 	/* Leave at original location */
 	return ( ( intptr_t ) data );
 }
+
+#endif /* defined(__i386__) || defined(__x86_64__) */
