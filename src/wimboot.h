@@ -130,22 +130,19 @@ static inline void bochsbp ( void ) {
 /* Mark parameter as unused */
 #define __unused __attribute__ (( unused ))
 
-#if __x86_64__
-static inline void call_real ( struct bootapp_callback_params *params ) {
-	/* Not available in 64-bit mode */
-	( void ) params;
-}
-static inline void call_interrupt ( struct bootapp_callback_params *params ) {
-	/* Not available in 64-bit mode */
-	( void ) params;
-}
-static inline void reboot ( void ) {
-	/* Not available in 64-bit mode */
-}
-#else
+#ifdef __i386__
 extern void call_real ( struct bootapp_callback_params *params );
 extern void call_interrupt ( struct bootapp_callback_params *params );
 extern void __attribute__ (( noreturn )) reboot ( void );
+#else
+static inline void call_real ( struct bootapp_callback_params *params ) {
+	( void ) params;
+}
+static inline void call_interrupt ( struct bootapp_callback_params *params ) {
+	( void ) params;
+}
+static inline void reboot ( void ) {
+}
 #endif
 
 extern void __attribute__ (( noreturn, format ( printf, 1, 2 ) ))
