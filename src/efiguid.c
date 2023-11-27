@@ -31,6 +31,7 @@
 #include "efi/Protocol/GraphicsOutput.h"
 #include "efi/Protocol/LoadedImage.h"
 #include "efi/Protocol/SimpleFileSystem.h"
+#include "efi/Protocol/LoadFile2.h"
 
 /** Block I/O protocol GUID */
 EFI_GUID efi_block_io_protocol_guid
@@ -51,3 +52,7 @@ EFI_GUID efi_loaded_image_protocol_guid
 /** Simple file system protocol GUID */
 EFI_GUID efi_simple_file_system_protocol_guid
 	= EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
+
+/** Load File 2 protocol GUID */
+EFI_GUID efi_load_file2_protocol_guid
+	= EFI_LOAD_FILE2_PROTOCOL_GUID;
