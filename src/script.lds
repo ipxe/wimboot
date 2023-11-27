@@ -24,7 +24,6 @@ SECTIONS {
 		_prefix = .;
 		*(.prefix)
 		*(.prefix.*)
-		. = ALIGN ( alignment );
 		_eprefix = .;
 	}
 	_prefix_len = ABSOLUTE ( _eprefix ) - ABSOLUTE ( _prefix );
