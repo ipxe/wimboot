@@ -30,6 +30,8 @@
 #include "ctype.h"
 #include "wctype.h"
 
+#if defined(__i386__) || defined(__x86_64__)
+
 /**
  * Copy memory area
  *
@@ -105,6 +107,76 @@ void * memmove ( void *dest, const void *src, size_t len ) {
 		return memcpy_reverse ( dest, src, len );
 	}
 }
+
+#elif defined(__aarch64__)
+
+/**
+ * Copy memory area
+ *
+ * @v dest		Destination address
+ * @v src		Source address
+ * @v len		Length
+ * @ret dest		Destination address
+ */
+void * memcpy ( void *dest, const void *src, size_t len ) {
+	void *discard_dest;
+	void *discard_end;
+	const void *discard_src;
+	size_t discard_offset;
+	unsigned long discard_data;
+	unsigned long discard_low;
+	unsigned long discard_high;
+
+	/* If length is too short for an "ldp"/"stp" instruction pair,
+	 * then just copy individual bytes.
+	 */
+	if ( len < 16 ) {
+		__asm__ __volatile__ ( "cbz %0, 2f\n\t"
+				       "\n1:\n\t"
+				       "sub %0, %0, #1\n\t"
+				       "ldrb %w1, [%3, %0]\n\t"
+				       "strb %w1, [%2, %0]\n\t"
+				       "cbnz %0, 1b\n\t"
+				       "\n2:\n\t"
+				       : "=&r" ( discard_offset ),
+					 "=&r" ( discard_data )
+				       : "r" ( dest ), "r" ( src ), "0" ( len )
+				       : "memory" );
+		return dest;
+	}
+
+	/* Use "ldp"/"stp" to copy 16 bytes at a time: one initial
+	 * potentially unaligned access, multiple destination-aligned
+	 * accesses, one final potentially unaligned access.
+	 */
+	__asm__ __volatile__ ( "ldp %3, %4, [%1], #16\n\t"
+			       "stp %3, %4, [%0], #16\n\t"
+			       "and %3, %0, #15\n\t"
+			       "sub %0, %0, %3\n\t"
+			       "sub %1, %1, %3\n\t"
+			       "bic %2, %5, #15\n\t"
+			       "b 2f\n\t"
+			       "\n1:\n\t"
+			       "ldp %3, %4, [%1], #16\n\t"
+			       "stp %3, %4, [%0], #16\n\t"
+			       "\n2:\n\t"
+			       "cmp %0, %2\n\t"
+			       "bne 1b\n\t"
+			       "ldp %3, %4, [%6, #-16]\n\t"
+			       "stp %3, %4, [%5, #-16]\n\t"
+			       : "=&r" ( discard_dest ),
+				 "=&r" ( discard_src ),
+				 "=&r" ( discard_end ),
+				 "=&r" ( discard_low ),
+				 "=&r" ( discard_high )
+			       : "r" ( dest + len ), "r" ( src + len ),
+				 "0" ( dest ), "1" ( src )
+			       : "memory", "cc" );
+
+	return dest;
+}
+
+#endif
 
 /**
  * Set memory area
