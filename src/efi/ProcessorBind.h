@@ -51,6 +51,10 @@ typedef uint8_t BOOLEAN;
 #include <efi/X64/ProcessorBind.h>
 #endif
 
+#ifdef __aarch64__
+#include <efi/AArch64/ProcessorBind.h>
+#endif
+
 #endif /* EFI_HOSTONLY */
 
 #endif /* _WIMBOOT_EFI_PROCESSOR_BIND_H */
