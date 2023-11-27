@@ -39,7 +39,7 @@ static __attribute__ (( noinline )) unsigned long make_cookie ( void ) {
 			uint32_t eax;
 			uint32_t edx;
 		} __attribute__ (( packed ));
-		unsigned long tsc;
+		uint64_t raw;
 	} u;
 	unsigned long cookie;
 
@@ -47,8 +47,12 @@ static __attribute__ (( noinline )) unsigned long make_cookie ( void ) {
 	 * counter, which will have at least some minimal randomness
 	 * in the low bits by the time we are invoked.
 	 */
+#if defined(__i386__) || defined(__x86_64__)
 	__asm__ ( "rdtsc" : "=a" ( u.eax ), "=d" ( u.edx ) );
-	cookie = u.tsc;
+#elif defined(__aarch64__)
+	__asm__ ( "mrs %0, CNTVCT_EL0\n\t" : "=r" ( u.raw ) );
+#endif
+	cookie = u.raw;
 
 	/* Ensure that the value contains a NUL byte, to act as a
 	 * runaway string terminator.  Construct the NUL using a shift
