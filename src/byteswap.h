@@ -9,6 +9,15 @@
 
 #include <stdint.h>
 
+/*****************************************************************************
+ *
+ * x86 functions
+ *
+ *****************************************************************************
+ */
+
+#if defined(__i386__) || defined(__x86_64__)
+
 static inline __attribute__ (( always_inline, const )) uint16_t
 __bswap_variable_16 ( uint16_t x ) {
 	__asm__ ( "xchgb %b0,%h0" : "=Q" ( x ) : "0" ( x ) );
@@ -31,7 +40,7 @@ __bswap_32s ( uint32_t *x ) {
 	__asm__ ( "bswapl %k0" : "=r" ( *x ) : "0" ( *x ) );
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__)
 
 static inline __attribute__ (( always_inline, const )) uint64_t
 __bswap_variable_64 ( uint64_t x ) {
@@ -64,6 +73,57 @@ static inline __attribute__ (( always_inline )) void
 __bswap_64s ( uint64_t *x ) {
 	*x = __bswap_variable_64 ( *x );
 }
+
+/*****************************************************************************
+ *
+ * AArch64 functions
+ *
+ *****************************************************************************
+ */
+
+#elif defined(__aarch64__)
+
+static inline __attribute__ (( always_inline, const )) uint16_t
+__bswap_variable_16 ( uint16_t x ) {
+	__asm__ ( "rev16 %0, %1" : "=r" ( x ) : "r" ( x ) );
+	return x;
+}
+
+static inline __attribute__ (( always_inline )) void
+__bswap_16s ( uint16_t *x ) {
+	*x = __bswap_variable_16 ( *x );
+}
+
+static inline __attribute__ (( always_inline, const )) uint32_t
+__bswap_variable_32 ( uint32_t x ) {
+	__asm__ ( "rev32 %0, %1" : "=r" ( x ) : "r" ( x ) );
+	return x;
+}
+
+static inline __attribute__ (( always_inline )) void
+__bswap_32s ( uint32_t *x ) {
+	*x = __bswap_variable_32 ( *x );
+}
+
+static inline __attribute__ (( always_inline, const )) uint64_t
+__bswap_variable_64 ( uint64_t x ) {
+	__asm__ ( "rev %0, %1" : "=r" ( x ) : "r" ( x ) );
+	return x;
+}
+
+static inline __attribute__ (( always_inline )) void
+__bswap_64s ( uint64_t *x ) {
+	*x = __bswap_variable_64 ( *x );
+}
+
+#endif
+
+/*****************************************************************************
+ *
+ * Generic functions
+ *
+ *****************************************************************************
+ */
 
 /**
  * Byte-swap a 16-bit constant
