@@ -261,6 +261,7 @@ for test_file in args.test:
             continue
 
         # Check for required log messages
+        logcheck.append(r'wimboot v\d+\.\d+\.\d+ -- Windows Imaging Format')
         with open(logfile, 'rt') as fh:
             log = fh.read()
         logfail = [x for x in logcheck if not re.search(x, log)]
