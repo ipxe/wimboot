@@ -80,7 +80,8 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     return script
 
 
-def vm_xml(virttype, name, uuid, memory, uefi, logfile, romfile, booturl):
+def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
+           booturl):
     """Construct XML description of VM"""
     x_domain = etree.Element('domain')
     x_domain.attrib['type'] = virttype
@@ -117,9 +118,13 @@ def vm_xml(virttype, name, uuid, memory, uefi, logfile, romfile, booturl):
     if romfile:
         x_rom = etree.SubElement(x_interface, 'rom')
         x_rom.attrib['file'] = romfile
+    x_serial = etree.SubElement(x_devices, 'serial')
+    x_serial.attrib['type'] = 'file'
+    x_serial_source = etree.SubElement(x_serial, 'source')
+    x_serial_source.attrib['path'] = serfile
     x_qemu = etree.SubElement(x_domain, '{%s}commandline' % QEMU_NS)
     for arg in ('-set', 'netdev.%s.bootfile=%s' % ('hostnet0', booturl),
-                '-debugcon', 'file:%s' % logfile):
+                '-debugcon', 'file:%s' % dbgfile):
         x_qemu_arg = etree.SubElement(x_qemu, '{%s}arg' % QEMU_NS)
         x_qemu_arg.attrib['value'] = arg
     return etree.tostring(x_domain, pretty_print=True).decode().strip()
@@ -209,8 +214,9 @@ for test_file in args.test:
     with open(qrfile, 'wt', newline='\r\n') as fh:
         qr.print_ascii(out=fh)
 
-    # Construct debug log filename
-    logfile = os.path.abspath('out/%s.log' % key)
+    # Construct log filenames
+    dbgfile = os.path.abspath('out/%s.debug.log' % key)
+    serfile = os.path.abspath('out/%s.serial.log' % key)
 
     # Construct boot ROM filename
     romfile = os.path.abspath(args.romfile) if args.romfile else None
@@ -219,7 +225,8 @@ for test_file in args.test:
     booturl = 'http://${next-server}:%s/in/boot-%s.ipxe' % (http_port, uuid)
 
     # Launch VM
-    xml = vm_xml(virttype, name, uuid, memory, uefi, logfile, romfile, booturl)
+    xml = vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile,
+                 romfile, booturl)
     if args.verbose >= Verbosity.DEBUG:
         print("%s definition:\n%s\n" % (name, xml))
     vm = virt.createXML(xml, flags=libvirt.VIR_DOMAIN_START_AUTODESTROY)
@@ -233,7 +240,7 @@ for test_file in args.test:
         viewers = [subprocess.Popen(['virt-viewer', '--attach',
                                      '--connect', args.connection,
                                      '--id', str(vm.ID())]),
-                   subprocess.Popen(['tail', '-f', logfile])]
+                   subprocess.Popen(['tail', '-f', dbgfile])]
     else:
         viewers = []
 
@@ -262,9 +269,12 @@ for test_file in args.test:
 
         # Check for required log messages
         logcheck.append(r'wimboot v\d+\.\d+\.\d+ -- Windows Imaging Format')
-        with open(logfile, 'rt') as fh:
-            log = fh.read()
-        logfail = [x for x in logcheck if not re.search(x, log)]
+        with open(dbgfile, 'rt') as fh:
+            dbglog = fh.read()
+        with open(serfile, 'rt') as fh:
+            serlog = fh.read()
+        logfail = [x for x in logcheck
+                   if not re.search(x, dbglog) and not re.search(x, serlog)]
         if logfail:
             print("%s failed log check: %s" % (name, ', '.join(logfail)))
             break
