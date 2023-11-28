@@ -45,8 +45,10 @@ int putchar ( int character ) {
 		putchar ( '\r' );
 
 	/* Print character to bochs debug port */
+#if defined(__i386__) || defined(__x86_64__)
 	__asm__ __volatile__ ( "outb %b0, $0xe9"
 			       : : "a" ( character ) );
+#endif
 
 	/* Print character to EFI/BIOS console as applicable */
 	if ( efi_systab ) {
