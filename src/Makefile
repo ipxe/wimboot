@@ -194,3 +194,5 @@ clean :
 	$(RM) -f wimboot wimboot.i386 wimboot.x86_64 ../wimboot
 	$(RM) -f wimboot.i386.unsigned wimboot.x86_64.unsigned
 	$(RM) -f wimboot.i386.efi wimboot.x86_64.efi wimboot.cab
+
+.DELETE_ON_ERROR :
