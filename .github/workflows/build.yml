@@ -14,8 +14,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
-                           pesign gcab
+                           pesign gcab gcc-aarch64-linux-gnu
       - name: Build
         working-directory: src
         run: |
-          make
+          make CROSS_arm64=aarch64-linux-gnu-

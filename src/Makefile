@@ -16,6 +16,7 @@ OBJECTS += paging.o memmap.o
 OBJECTS_i386 := $(patsubst %.o,%.i386.o,$(OBJECTS))
 OBJECTS_x86_64 := $(patsubst %.o,%.x86_64.o,$(OBJECTS))
 OBJECTS_i386_x86_64 := $(patsubst %.o,%.i386.x86_64.o,$(OBJECTS))
+OBJECTS_arm64 := $(patsubst %.o,%.arm64.o,$(OBJECTS))
 
 # Header files
 #
@@ -54,6 +55,15 @@ AR_x86_64	= $(CROSS_x86_64)ar
 RANLIB_x86_64	= $(CROSS_x86_64)ranlib
 OBJCOPY_x86_64	= $(CROSS_x86_64)objcopy
 
+# Build tools for arm64 target
+#
+CC_arm64	= $(CROSS_arm64)gcc
+AS_arm64	= $(CROSS_arm64)as
+LD_arm64	= $(CROSS_arm64)ld
+AR_arm64	= $(CROSS_arm64)ar
+RANLIB_arm64	= $(CROSS_arm64)ranlib
+OBJCOPY_arm64	= $(CROSS_arm64)objcopy
+
 # Build flags for host binaries
 #
 HOST_CFLAGS	+= -Wall -W -Werror
@@ -81,6 +91,11 @@ LDFLAGS_i386	:= -m elf_i386
 CFLAGS_x86_64	:= -m64 -mno-red-zone -fpie
 ASFLAGS_x86_64	:= --64
 LDFLAGS_x86_64	:= -m elf_x86_64
+
+# Build flags for arm64 target
+#
+CFLAGS_arm64	:= -mlittle-endian -mcmodel=small -fno-pic
+ASFLAGS_arm64	:= -mabi=lp64 -EL
 
 # Run a test compilation and discard any output
 #
@@ -132,12 +147,13 @@ CFLAGS_COND	= $(CFLAGS_SPG) $(CFLAGS_CFI) $(CFLAGS_WNAPM) $(CFLAGS_WNAB) \
 		  $(CFLAGS_NLTO) $(CFLAGS_MS_ABI)
 CFLAGS_i386	+= $(call CFLAGS_COND,i386)
 CFLAGS_x86_64	+= $(call CFLAGS_COND,x86_64)
+CFLAGS_arm64	+= $(call CFLAGS_COND,arm64)
 
 ###############################################################################
 #
 # Final targets
 
-all : wimboot wimboot.i386 wimboot.x86_64 wimboot.cab
+all : wimboot wimboot.i386 wimboot.x86_64 wimboot.arm64 wimboot.cab
 
 wimboot : wimboot.x86_64 Makefile
 	$(CP) $< $@
@@ -152,7 +168,7 @@ wimboot.%.unsigned : wimboot.%.elf elf2efi32 Makefile
 	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi32 --hybrid $< $@
 
-wimboot.x86_64.unsigned : \
+wimboot.x86_64.unsigned wimboot.arm64.unsigned : \
 wimboot.%.unsigned : wimboot.%.elf elf2efi64 Makefile
 	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi64 --hybrid $< $@
@@ -170,8 +186,8 @@ wimboot.% : wimboot.%.efi wimboot.%.efi.hash wimboot.%.unsigned.hash Makefile
 	$(DIFF) wimboot.$*.efi.hash wimboot.$*.unsigned.hash
 	$(CP) $< $@
 
-wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi Makefile
-	$(GCAB) -n -c $@ wimboot.i386.efi wimboot.x86_64.efi
+wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi wimboot.arm64.efi Makefile
+	$(GCAB) -n -c $@ wimboot.i386.efi wimboot.x86_64.efi wimboot.arm64.efi
 
 ###############################################################################
 #
@@ -221,6 +237,24 @@ lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 
 ###############################################################################
 #
+# arm64 objects
+
+%.arm64.s : %.S $(HEADERS) Makefile
+	$(CC_arm64) $(CFLAGS) $(CFLAGS_arm64) -DASSEMBLY -E $< -o $@
+
+%.arm64.s : %.c $(HEADERS) Makefile
+	$(CC_arm64) $(CFLAGS) $(CFLAGS_arm64) -S $< -o $@
+
+%.arm64.o : %.arm64.s Makefile
+	$(AS_arm64) $(ASFLAGS) $(ASFLAGS_arm64) $< -o $@
+
+lib.arm64.a : $(OBJECTS_arm64) Makefile
+	$(RM) -f $@
+	$(AR_arm64) r $@ $(OBJECTS_arm64)
+	$(RANLIB_arm64) $@
+
+###############################################################################
+#
 # EFI relocator
 
 elf2efi32 : elf2efi.c Makefile
@@ -238,6 +272,7 @@ clean :
 	$(RM) -f elf2efi32 elf2efi64
 	$(RM) -f wimboot.i386 wimboot.i386.*
 	$(RM) -f wimboot.x86_64 wimboot.x86_64.*
+	$(RM) -f wimboot.arm64 wimboot.arm64.*
 	$(RM) -f wimboot wimboot.cab
 
 .DELETE_ON_ERROR :

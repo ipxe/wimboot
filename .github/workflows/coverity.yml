@@ -16,7 +16,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
-                           pesign gcab
+                           pesign gcab gcc-aarch64-linux-gnu
       - name: Download Coverity Scan
         run: |
           curl --form token=${{ secrets.COVERITY_SCAN_TOKEN }} \
@@ -28,7 +28,8 @@ jobs:
       - name: Build via Coverity Scan
         working-directory: src
         run: |
-          /opt/coverity/bin/cov-build --dir cov-int make
+          /opt/coverity/bin/cov-build --dir cov-int \
+          make CROSS_arm64=aarch64-linux-gnu-
       - name: Create submission
         working-directory: src
         run : |

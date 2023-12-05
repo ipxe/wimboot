@@ -85,7 +85,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
-                           pesign gcab \
+                           pesign gcab gcc-aarch64-linux-gnu \
                            qemu-system-x86 ovmf \
                            python3-libvirt python3-lxml python3-pil \
                            python3-qrcode python3-yaml python3-zbar
@@ -93,7 +93,7 @@ jobs:
       - name: Build
         working-directory: src
         run: |
-          make
+          make CROSS_arm64=aarch64-linux-gnu-
 
       - name: Fetch images
         uses: actions/cache@v3

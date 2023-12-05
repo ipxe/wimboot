@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+- Add support for building as an AArch64 (ARM64) binary.
+
 - Update to latest EDK2 headers.
 
 ## [v2.7.6] 2023-08-16
