@@ -9,7 +9,7 @@ jobs:
 
   secrets:
     name: Secrets check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       IMAGES_RSYNC_URI: ${{ secrets.IMAGES_RSYNC_URI }}
     outputs:
@@ -24,7 +24,7 @@ jobs:
 
   cache:
     name: Image cache
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: secrets
     if: needs.secrets.outputs.present
     outputs:
@@ -73,7 +73,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: cache
     if: ${{ github.event_name == 'push' }}
     steps:

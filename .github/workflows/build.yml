@@ -6,7 +6,7 @@ jobs:
 
   gcc:
     name: Build (gcc)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -22,7 +22,7 @@ jobs:
 
   clang:
     name: Build (clang)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out code
         uses: actions/checkout@v3
