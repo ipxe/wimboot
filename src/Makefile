@@ -43,7 +43,6 @@ CC_i386		= $(CROSS_i386)gcc
 AS_i386		= $(CROSS_i386)as
 LD_i386		= $(CROSS_i386)ld
 AR_i386		= $(CROSS_i386)ar
-RANLIB_i386	= $(CROSS_i386)ranlib
 OBJCOPY_i386	= $(CROSS_i386)objcopy
 
 # Build tools for x86_64 target
@@ -52,7 +51,6 @@ CC_x86_64	= $(CROSS_x86_64)gcc
 AS_x86_64	= $(CROSS_x86_64)as
 LD_x86_64	= $(CROSS_x86_64)ld
 AR_x86_64	= $(CROSS_x86_64)ar
-RANLIB_x86_64	= $(CROSS_x86_64)ranlib
 OBJCOPY_x86_64	= $(CROSS_x86_64)objcopy
 
 # Build tools for arm64 target
@@ -61,7 +59,6 @@ CC_arm64	= $(CROSS_arm64)gcc
 AS_arm64	= $(CROSS_arm64)as
 LD_arm64	= $(CROSS_arm64)ld
 AR_arm64	= $(CROSS_arm64)ar
-RANLIB_arm64	= $(CROSS_arm64)ranlib
 OBJCOPY_arm64	= $(CROSS_arm64)objcopy
 
 # Build flags for host binaries
@@ -202,8 +199,7 @@ wimboot.cab : wimboot.i386.efi wimboot.x86_64.efi wimboot.arm64.efi Makefile
 
 lib.i386.a : $(OBJECTS_i386) Makefile
 	$(RM) -f $@
-	$(AR_i386) r $@ $(OBJECTS_i386)
-	$(RANLIB_i386) $@
+	$(AR_i386) -r -s $@ $(OBJECTS_i386)
 
 ###############################################################################
 #
@@ -230,8 +226,7 @@ lib.i386.a : $(OBJECTS_i386) Makefile
 
 lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 	$(RM) -f $@
-	$(AR_x86_64) r $@ $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64)
-	$(RANLIB_x86_64) $@
+	$(AR_x86_64) -r -s $@ $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64)
 
 ###############################################################################
 #
@@ -248,8 +243,7 @@ lib.x86_64.a : $(OBJECTS_x86_64) $(OBJECTS_i386_x86_64) Makefile
 
 lib.arm64.a : $(OBJECTS_arm64) Makefile
 	$(RM) -f $@
-	$(AR_arm64) r $@ $(OBJECTS_arm64)
-	$(RANLIB_arm64) $@
+	$(AR_arm64) -r -s $@ $(OBJECTS_arm64)
 
 ###############################################################################
 #
