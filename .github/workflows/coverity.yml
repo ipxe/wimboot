@@ -29,7 +29,7 @@ jobs:
         working-directory: src
         run: |
           /opt/coverity/bin/cov-build --dir cov-int \
-          make CROSS_arm64=aarch64-linux-gnu-
+          make
       - name: Create submission
         working-directory: src
         run : |

@@ -18,4 +18,4 @@ jobs:
       - name: Build
         working-directory: src
         run: |
-          make CROSS_arm64=aarch64-linux-gnu-
+          make

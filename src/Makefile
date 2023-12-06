@@ -32,10 +32,25 @@ PESIGN		= pesign
 DIFF		= diff
 GREP		= grep
 XARGS		= xargs
+CUT		= cut
 
 # Build tools for host binaries
 #
 HOST_CC		= $(CC)
+
+# Get list of default compiler definitions
+#
+CCDEFS		:= $(shell $(CC) -E -x c -c /dev/null -dM | $(CUT) -d" " -f2)
+
+# Guess appropriate cross-compilation prefixes
+#
+ifneq ($(filter __x86_64__,$(CCDEFS)),__x86_64__)
+CROSS_x86_64	?= x86_64-linux-gnu-
+endif
+ifneq ($(filter __aarch64__,$(CCDEFS)),__aarch64__)
+CROSS_arm64	?= aarch64-linux-gnu-
+endif
+CROSS_i386	?= $(CROSS_x86_64)
 
 # Build tools for i386 target
 #
