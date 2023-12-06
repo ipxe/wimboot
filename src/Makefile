@@ -24,23 +24,34 @@ HEADERS := $(wildcard *.h)
 
 # Common build tools
 #
-ECHO		= echo
-CP		= cp
-RM		= rm
-GCAB		= gcab
-PESIGN		= pesign
-DIFF		= diff
-GREP		= grep
-XARGS		= xargs
-CUT		= cut
+ECHO		?= echo
+CP		?= cp
+RM		?= rm
+GCAB		?= gcab
+PESIGN		?= pesign
+DIFF		?= diff
+GREP		?= grep
+XARGS		?= xargs
+CUT		?= cut
+CC		?= cc
+AS		?= as
+LD		?= ld
+AR		?= ar
+OBJCOPY		?= objcopy
 
 # Build tools for host binaries
 #
-HOST_CC		= $(CC)
+HOST_CC		:= $(CC)
 
 # Get list of default compiler definitions
 #
 CCDEFS		:= $(shell $(CC) -E -x c -c /dev/null -dM | $(CUT) -d" " -f2)
+
+# Detect compiler type
+#
+ifeq ($(filter __GNUC__,$(CCDEFS)),__GNUC__)
+CC		:= gcc
+endif
 
 # Guess appropriate cross-compilation prefixes
 #
@@ -54,27 +65,27 @@ CROSS_i386	?= $(CROSS_x86_64)
 
 # Build tools for i386 target
 #
-CC_i386		= $(CROSS_i386)gcc
-AS_i386		= $(CROSS_i386)as
-LD_i386		= $(CROSS_i386)ld
-AR_i386		= $(CROSS_i386)ar
-OBJCOPY_i386	= $(CROSS_i386)objcopy
+CC_i386		?= $(CROSS_i386)$(CC)
+AS_i386		?= $(CROSS_i386)$(AS)
+LD_i386		?= $(CROSS_i386)$(LD)
+AR_i386		?= $(CROSS_i386)$(AR)
+OBJCOPY_i386	?= $(CROSS_i386)$(OBJCOPY)
 
 # Build tools for x86_64 target
 #
-CC_x86_64	= $(CROSS_x86_64)gcc
-AS_x86_64	= $(CROSS_x86_64)as
-LD_x86_64	= $(CROSS_x86_64)ld
-AR_x86_64	= $(CROSS_x86_64)ar
-OBJCOPY_x86_64	= $(CROSS_x86_64)objcopy
+CC_x86_64	?= $(CROSS_x86_64)$(CC)
+AS_x86_64	?= $(CROSS_x86_64)$(AS)
+LD_x86_64	?= $(CROSS_x86_64)$(LD)
+AR_x86_64	?= $(CROSS_x86_64)$(AR)
+OBJCOPY_x86_64	?= $(CROSS_x86_64)$(OBJCOPY)
 
 # Build tools for arm64 target
 #
-CC_arm64	= $(CROSS_arm64)gcc
-AS_arm64	= $(CROSS_arm64)as
-LD_arm64	= $(CROSS_arm64)ld
-AR_arm64	= $(CROSS_arm64)ar
-OBJCOPY_arm64	= $(CROSS_arm64)objcopy
+CC_arm64	?= $(CROSS_arm64)$(CC)
+AS_arm64	?= $(CROSS_arm64)$(AS)
+LD_arm64	?= $(CROSS_arm64)$(LD)
+AR_arm64	?= $(CROSS_arm64)$(AR)
+OBJCOPY_arm64	?= $(CROSS_arm64)$(OBJCOPY)
 
 # Build flags for host binaries
 #
