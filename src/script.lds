@@ -58,6 +58,8 @@ SECTIONS {
 		*(.rodata.*)
 		*(.data)
 		*(.data.*)
+		*(.got)
+		*(.got.*)
 		. = ALIGN ( alignment );
 		_edata = .;
 	}

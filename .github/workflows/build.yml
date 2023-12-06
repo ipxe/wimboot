@@ -4,8 +4,8 @@ on: push
 
 jobs:
 
-  build:
-    name: Build
+  gcc:
+    name: Build (gcc)
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code
@@ -19,3 +19,19 @@ jobs:
         working-directory: src
         run: |
           make
+
+  clang:
+    name: Build (clang)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Install packages
+        run: |
+          sudo apt update
+          sudo apt install -y -o Acquire::Retries=50 \
+                           pesign gcab binutils-aarch64-linux-gnu
+      - name: Build
+        working-directory: src
+        run: |
+          make CC=clang

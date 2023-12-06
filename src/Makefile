@@ -49,7 +49,12 @@ CCDEFS		:= $(shell $(CC) -E -x c -c /dev/null -dM | $(CUT) -d" " -f2)
 
 # Detect compiler type
 #
-ifeq ($(filter __GNUC__,$(CCDEFS)),__GNUC__)
+ifeq ($(filter __clang__,$(CCDEFS)),__clang__)
+CC_i386		?= $(CC) -target i386
+CC_x86_64	?= $(CC) -target x86_64
+CC_arm64	?= $(CC) -target aarch64
+CFLAGS		+= -Wno-unused-command-line-argument
+else ifeq ($(filter __GNUC__,$(CCDEFS)),__GNUC__)
 CC		:= gcc
 endif
 
@@ -102,6 +107,7 @@ ifneq ($(DEBUG),)
 CFLAGS		+= -DDEBUG=$(DEBUG)
 endif
 CFLAGS		+= $(EXTRA_CFLAGS)
+LDFLAGS		+= --no-relax
 
 # Build flags for i386 target
 #
@@ -153,6 +159,10 @@ CFLAGS_WNAB	= $(call CFLAGS_TEST,$(1),-Wno-array-bounds)
 #
 CFLAGS_NLTO	= $(call CFLAGS_TEST,$(1),-fno-lto)
 
+# Inhibit address-significance table
+#
+CFLAGS_NAS	= $(call CFLAGS_TEST,$(1),-fno-addrsig)
+
 # Add -maccumulate-outgoing-args if required
 #
 MS_ABI_TEST_CODE := extern void __attribute__ (( ms_abi )) ms_abi(); \
@@ -167,7 +177,7 @@ endef
 # Conditional build flags
 #
 CFLAGS_COND	= $(CFLAGS_SPG) $(CFLAGS_CFI) $(CFLAGS_WNAPM) $(CFLAGS_WNAB) \
-		  $(CFLAGS_NLTO) $(CFLAGS_MS_ABI)
+		  $(CFLAGS_NLTO) $(CFLAGS_NAS) $(CFLAGS_MS_ABI)
 CFLAGS_i386	+= $(call CFLAGS_COND,i386)
 CFLAGS_x86_64	+= $(call CFLAGS_COND,x86_64)
 CFLAGS_arm64	+= $(call CFLAGS_COND,arm64)

@@ -85,7 +85,7 @@ __bswap_64s ( uint64_t *x ) {
 
 static inline __attribute__ (( always_inline, const )) uint16_t
 __bswap_variable_16 ( uint16_t x ) {
-	__asm__ ( "rev16 %0, %1" : "=r" ( x ) : "r" ( x ) );
+	__asm__ ( "rev16 %x0, %x1" : "=r" ( x ) : "r" ( x ) );
 	return x;
 }
 
@@ -96,7 +96,7 @@ __bswap_16s ( uint16_t *x ) {
 
 static inline __attribute__ (( always_inline, const )) uint32_t
 __bswap_variable_32 ( uint32_t x ) {
-	__asm__ ( "rev32 %0, %1" : "=r" ( x ) : "r" ( x ) );
+	__asm__ ( "rev32 %x0, %x1" : "=r" ( x ) : "r" ( x ) );
 	return x;
 }
 
