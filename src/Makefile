@@ -165,12 +165,10 @@ wimboot.%.elf : lib.%.a script.lds Makefile
 
 wimboot.i386.unsigned : \
 wimboot.%.unsigned : wimboot.%.elf elf2efi32 Makefile
-	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi32 --hybrid $< $@
 
 wimboot.x86_64.unsigned wimboot.arm64.unsigned : \
 wimboot.%.unsigned : wimboot.%.elf elf2efi64 Makefile
-	$(OBJCOPY_$*) -Obinary $< $@
 	./elf2efi64 --hybrid $< $@
 
 wimboot.%.unsigned.hash : wimboot.%.unsigned Makefile
