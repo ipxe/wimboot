@@ -110,4 +110,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: qa-results
-          path: test/out/*
+          path: |
+            wimboot
+            src/wimboot.*.efi
+            test/out/*
