@@ -38,6 +38,15 @@
 /** Original OpenProtocol() method */
 static EFI_OPEN_PROTOCOL orig_open_protocol;
 
+/** Dummy "opening graphics output protocol blocked once" protocol GUID */
+static EFI_GUID efi_graphics_output_protocol_blocked_guid = {
+	0xbd1598bf, 0x8e65, 0x47e0,
+	{ 0x80, 0x01, 0xe4, 0x62, 0x4c, 0xab, 0xa4, 0x7f }
+};
+
+/** Dummy "opening graphics output protocol blocked once" protocol instance */
+static uint8_t efi_graphics_output_protocol_blocked;
+
 /**
  * Intercept OpenProtocol()
  *
@@ -53,7 +62,7 @@ static EFI_STATUS EFIAPI
 efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 			    VOID **interface, EFI_HANDLE agent_handle,
 			    EFI_HANDLE controller_handle, UINT32 attributes ) {
-	static unsigned int count;
+	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
 	EFI_STATUS efirc;
 
 	/* Open the protocol */
@@ -63,7 +72,7 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 		return efirc;
 	}
 
-	/* Block first attempt by bootmgfw.efi to open
+	/* Block first attempt by bootmgfw.efi to open each
 	 * EFI_GRAPHICS_OUTPUT_PROTOCOL.  This forces error messages
 	 * to be displayed in text mode (thereby avoiding the totally
 	 * blank error screen if the fonts are missing).  We must
@@ -72,7 +81,12 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 	 */
 	if ( ( memcmp ( protocol, &efi_graphics_output_protocol_guid,
 			sizeof ( *protocol ) ) == 0 ) &&
-	     ( count++ == 0 ) && ( ! cmdline_gui ) ) {
+	     ( bs->InstallMultipleProtocolInterfaces (
+			&handle,
+			&efi_graphics_output_protocol_blocked_guid,
+			&efi_graphics_output_protocol_blocked,
+			NULL ) == 0 ) &&
+	     ( ! cmdline_gui ) ) {
 		DBG ( "Forcing text mode output\n" );
 		return EFI_INVALID_PARAMETER;
 	}

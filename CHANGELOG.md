@@ -5,6 +5,8 @@ Changelog
 
 - Add support for building as an AArch64 (ARM64) binary.
 
+- Fix forcing of text mode output when multiple displays are present.
+
 - Update to latest EDK2 headers.
 
 ## [v2.7.6] 2023-08-16
