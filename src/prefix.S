@@ -68,6 +68,7 @@ _prefix:
 
 #if defined(__i386__) || defined(__x86_64__)
 
+	.code32
 	.arch	i386
 
 	.org	0x1f1

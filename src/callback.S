@@ -51,8 +51,8 @@
 
 #if defined(__i386__) || defined(__x86_64__)
 
-	.arch	i386
 	.code32
+	.arch	i386
 
 	/* Call an arbitrary real-mode function */
 	.section ".text", "ax", @progbits
