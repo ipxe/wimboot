@@ -157,6 +157,8 @@ parser.add_argument('--interactive', '-i', action='store_true',
                     help="Launch interactive viewer")
 parser.add_argument('--romfile', '-r', metavar='FILE',
                     help="iPXE boot ROM")
+parser.add_argument('--no-kvm', dest='kvm', action='store_false',
+                    help="Disable KVM acceleration")
 parser.add_argument('--timeout', '-t', type=int, default=60, metavar='T',
                     help="Timeout (in seconds)")
 parser.add_argument('--verbose', '-v', action='count', default=0,
@@ -171,11 +173,13 @@ http_port = start_httpd()
 virt = libvirt.open(args.connection)
 
 # Select a supported virtualisation type
-try:
-    virt.getDomainCapabilities(virttype='kvm')
-    virttype = 'kvm'
-except libvirt.libvirtError:
-    virttype = 'qemu'
+virttype = 'qemu'
+if args.kvm:
+    try:
+        virt.getDomainCapabilities(virttype='kvm')
+        virttype = 'kvm'
+    except libvirt.libvirtError:
+        pass
 
 # Run test cases
 failures = []
