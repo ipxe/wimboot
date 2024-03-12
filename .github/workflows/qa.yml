@@ -54,7 +54,7 @@ jobs:
           echo "hash=${{ hashFiles('.rsync.list') }}" >> $GITHUB_OUTPUT
 
       - name: Cache images
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: test/images
           key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ steps.key.outputs.hash }}
@@ -79,7 +79,7 @@ jobs:
     steps:
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install packages
         run: |
@@ -96,7 +96,7 @@ jobs:
           make
 
       - name: Fetch images
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: test/images
           key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ needs.cache.outputs.hash }}
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload outputs
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qa-results
           path: |
