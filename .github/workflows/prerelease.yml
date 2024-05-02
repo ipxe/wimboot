@@ -32,9 +32,10 @@ jobs:
 
       - name: Check binary versions
         run: |
-          file wimboot | grep "version ${TAG},"
-          file src/wimboot.i386 | grep "version ${TAG},"
-          file src/wimboot.x86_64 | grep "version ${TAG},"
+          grep --binary "wimboot ${TAG} --" wimboot
+          grep --binary "wimboot ${TAG} --" src/wimboot.i386
+          grep --binary "wimboot ${TAG} --" src/wimboot.x86_64
+          grep --binary "wimboot ${TAG} --" src/wimboot.arm64
 
       - name: Extract changes
         run: |
@@ -46,6 +47,7 @@ jobs:
         run: |
           BIN=${DOWNLOAD}/${TAG}/wimboot
           BIN_I386=${DOWNLOAD}/${TAG}/wimboot.i386
+          BIN_ARM64=${DOWNLOAD}/${TAG}/wimboot.arm64
           cat > NOTES.md <<EOF
           Downloads
           =========
@@ -55,6 +57,7 @@ jobs:
 
             - [wimboot](${BIN}) (for BIOS and 64-bit UEFI systems)
             - [wimboot.i386](${BIN_I386}) (for BIOS and 32-bit UEFI systems)
+            - [wimboot.arm64](${BIN_ARM64}) (for AArch64 UEFI systems)
 
           Source code
           -----------
@@ -74,4 +77,4 @@ jobs:
         run: |
           gh release create ${TAG} --verify-tag --prerelease \
               --title "${TAG} (${DATE})" --notes-file NOTES.md \
-              wimboot src/wimboot.i386
+              wimboot src/wimboot.i386 src/wimboot.arm64

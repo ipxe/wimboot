@@ -3,9 +3,17 @@ Changelog
 
 ## [Unreleased]
 
-- Add support for building as an AArch64 (ARM64) binary.
+## [v2.8.0] 2024-05-02
+
+- Add support for building as an AArch64 (ARM64) binary (sponsored by
+  [2Pint Software][2pint]).
 
 - Fix forcing of text mode output when multiple displays are present.
+
+- Add support for building with the clang compiler.
+
+- Replace efireloc with iPXE's elf2efi tool for converting ELF
+  binaries to PE format.
 
 - Update to latest EDK2 headers.
 
@@ -234,6 +242,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.8.0]: https://github.com/ipxe/wimboot/releases/tag/v2.8.0
 [v2.7.6]: https://github.com/ipxe/wimboot/releases/tag/v2.7.6
 [v2.7.5]: https://github.com/ipxe/wimboot/releases/tag/v2.7.5
 [v2.7.4]: https://github.com/ipxe/wimboot/releases/tag/v2.7.4

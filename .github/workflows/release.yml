@@ -24,7 +24,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${TAG} --clobber wimboot src/wimboot.i386
+          gh release upload ${TAG} --clobber \
+              wimboot src/wimboot.i386 src/wimboot.arm64
 
       - name: Clear prerelease flag
         env:
