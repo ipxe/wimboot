@@ -24,7 +24,11 @@ import zbar
 QEMU_NS = 'http://libvirt.org/schemas/domain/qemu/1.0'
 etree.register_namespace('qemu', QEMU_NS)
 
-OVMF_PATH = '/usr/share/OVMF/OVMF_CODE.fd'
+OVMF_PATHS = [
+    '/usr/share/OVMF/OVMF_CODE.fd',
+    '/usr/share/OVMF/OVMF_CODE_2M.fd',
+    '/usr/share/OVMF/OVMF_CODE_4M.fd'
+]
 
 
 class Verbosity(IntEnum):
@@ -80,6 +84,11 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     return script
 
 
+def ovmf_path():
+    """Determine OVMF path"""
+    return next(x for x in OVMF_PATHS if os.path.exists(x))
+
+
 def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
            booturl):
     """Construct XML description of VM"""
@@ -95,7 +104,8 @@ def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
     x_ostype.attrib['arch'] = 'x86_64'
     if uefi:
         x_loader = etree.SubElement(x_os, 'loader')
-        x_loader.text = OVMF_PATH
+        x_loader.text = ovmf_path()
+        x_loader.attrib['type'] = 'pflash'
     x_features = etree.SubElement(x_domain, 'features')
     x_acpi = etree.SubElement(x_features, 'acpi')
     x_boot = etree.SubElement(x_os, 'boot')
