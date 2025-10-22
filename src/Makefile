@@ -155,6 +155,11 @@ CFLAGS_WNAPM	= $(call CFLAGS_TEST,$(1),-Wno-address-of-packed-member)
 #
 CFLAGS_WNAB	= $(call CFLAGS_TEST,$(1),-Wno-array-bounds)
 
+# Inhibit spurious warnings from fixed-length string initializers
+#
+CFLAGS_WNUSI	= $(call CFLAGS_TEST,$(1),\
+			 -Wno-unterminated-string-initialization)
+
 # Inhibit LTO
 #
 CFLAGS_NLTO	= $(call CFLAGS_TEST,$(1),-fno-lto)
@@ -177,7 +182,7 @@ endef
 # Conditional build flags
 #
 CFLAGS_COND	= $(CFLAGS_SPG) $(CFLAGS_CFI) $(CFLAGS_WNAPM) $(CFLAGS_WNAB) \
-		  $(CFLAGS_NLTO) $(CFLAGS_NAS) $(CFLAGS_MS_ABI)
+		  $(CFLAGS_WNUSI) $(CFLAGS_NLTO) $(CFLAGS_NAS) $(CFLAGS_MS_ABI)
 CFLAGS_i386	+= $(call CFLAGS_COND,i386)
 CFLAGS_x86_64	+= $(call CFLAGS_COND,x86_64)
 CFLAGS_arm64	+= $(call CFLAGS_COND,arm64)
