@@ -45,7 +45,7 @@ HOST_CC		:= $(CC)
 
 # Get list of default compiler definitions
 #
-CCDEFS		:= $(shell $(CC) -E -x c -c /dev/null -dM | $(CUT) -d" " -f2)
+CCDEFS		:= $(shell $(CC) -E -x c /dev/null -dM | $(CUT) -d" " -f2)
 
 # Detect compiler type
 #
