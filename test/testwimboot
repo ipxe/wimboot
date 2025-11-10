@@ -111,6 +111,20 @@ def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
     x_ostype = etree.SubElement(x_os, 'type')
     x_ostype.text = 'hvm'
     x_ostype.attrib['arch'] = 'x86_64'
+    x_cpu = etree.SubElement(x_domain, 'cpu')
+    x_cpu.attrib['match'] = 'exact'
+    x_cpu_model = etree.SubElement(x_cpu, 'model')
+    x_cpu_model.text = 'qemu64'
+    x_cpu_model.attrib['fallback'] = 'allow'
+    cpu_features = {
+        'popcnt': 'require',
+        'sse4.2': 'require',
+        'svm': 'disable',
+    }
+    for feature, policy in cpu_features.items():
+        x_cpu_feature = etree.SubElement(x_cpu, 'feature')
+        x_cpu_feature.attrib['name'] = feature
+        x_cpu_feature.attrib['policy'] = policy
     if uefi:
         x_loader = etree.SubElement(x_os, 'loader')
         x_loader.text = ovmf_path()
