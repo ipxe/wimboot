@@ -101,9 +101,17 @@ jobs:
           path: test/images
           key: ${{ secrets.IMAGES_CACHE_KEY }}-${{ needs.cache.outputs.hash }}
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", MODE:="0666"' | \
+               sudo tee /etc/udev/rules.d/99-kvm-all-users.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Run tests
         run: |
-          make -C test -j $(nproc) ARGS="-vv -r images/e1000.rom -t 180"
+          make -C test -j $(nproc) \
+               ARGS="-vv -r images/e1000.rom -t 180 --no-kvm32"
 
       - name: Upload outputs
         if: ${{ always() }}
