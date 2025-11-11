@@ -50,6 +50,15 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().log_request(code=code, **kwargs)
 
 
+def has_kvm(virt):
+    """Check to see if KVM is supported on this host"""
+    try:
+        virt.getDomainCapabilities(virttype='kvm')
+        return True
+    except libvirt.libvirtError:
+        return False
+
+
 def start_httpd():
     """Start HTTP daemon thread serving static files"""
     httpd = http.server.HTTPServer(('localhost', 0), HTTPRequestHandler)
@@ -169,6 +178,8 @@ parser.add_argument('--romfile', '-r', metavar='FILE',
                     help="iPXE boot ROM")
 parser.add_argument('--no-kvm', dest='kvm', action='store_false',
                     help="Disable KVM acceleration")
+parser.add_argument('--no-kvm32', dest='kvm32', action='store_false',
+                    help="Disable KVM acceleration (32-bit only)")
 parser.add_argument('--timeout', '-t', type=int, default=60, metavar='T',
                     help="Timeout (in seconds)")
 parser.add_argument('--verbose', '-v', action='count', default=0,
@@ -183,13 +194,11 @@ http_port = start_httpd()
 virt = libvirt.open(args.connection)
 
 # Select a supported virtualisation type
-virttype = 'qemu'
-if args.kvm:
-    try:
-        virt.getDomainCapabilities(virttype='kvm')
-        virttype = 'kvm'
-    except libvirt.libvirtError:
-        pass
+virttypes = {'x64': 'qemu', 'x86': 'qemu'}
+if args.kvm and has_kvm(virt):
+    virttypes['x64'] = 'kvm'
+    if args.kvm32:
+        virttypes['x86'] = 'kvm'
 
 # Run test cases
 failures = []
@@ -237,6 +246,9 @@ for test_file in args.test:
 
     # Construct boot URL
     booturl = 'http://${next-server}:%s/in/boot-%s.ipxe' % (http_port, uuid)
+
+    # Determine virtualisation type
+    virttype = virttypes[arch]
 
     # Launch VM
     xml = vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile,
