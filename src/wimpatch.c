@@ -210,6 +210,10 @@ static int wim_inject_file ( struct vdisk_file *vfile ) {
 	if ( strcasecmp ( vfile->name, "BCD" ) == 0 )
 		return 0;
 
+	/* Ignore boot.stl files */
+	if ( strcasecmp ( vfile->name, "boot.stl" ) == 0 )
+		return 0;
+
 	/* Locate file extension */
 	name_len = strlen ( vfile->name );
 	ext = ( ( name_len > 4 ) ? ( vfile->name + name_len - 4 ) : "" );
