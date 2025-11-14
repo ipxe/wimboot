@@ -3,6 +3,21 @@ Changelog
 
 ## [Unreleased]
 
+- Extract the `boot.stl` file automatically from the `.wim` image, to
+  allow Windows 11 24H2 and newer to boot (debugged with [2Pint
+  Software][2pint]).
+
+- Add support for automatically selecting `bootmgfw_EX.efi` as the
+  next-stage bootloader on systems that trust the "Windows UEFI CA
+  2023" certificate.
+
+- Update tests to use KVM within GitHub Actions where possible.
+
+- Drop Windows 7 UEFI test, since upstream OVMF no longer provides the
+  necessary VbeShim support.
+
+- Add Windows 11 tests.
+
 ## [v2.8.0] 2024-05-02
 
 - Add support for building as an AArch64 (ARM64) binary (sponsored by
