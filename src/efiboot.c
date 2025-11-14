@@ -33,6 +33,8 @@
 #include "efi.h"
 #include "efi/Protocol/GraphicsOutput.h"
 #include "efipath.h"
+#include "efiblock.h"
+#include "efifile.h"
 #include "efiboot.h"
 
 /** Original OpenProtocol() method */
@@ -95,26 +97,20 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 }
 
 /**
- * Boot from EFI device
+ * Try loading EFI image
  *
  * @v file		Virtual file
- * @v path		Device path
- * @v device		Device handle
+ * @ret handle		Image handle, or NULL on failure
  */
-void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
-		EFI_HANDLE device ) {
+static EFI_HANDLE efi_load ( struct vdisk_file *file ) {
 	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
-	union {
-		EFI_LOADED_IMAGE_PROTOCOL *image;
-		void *intf;
-	} loaded;
 	EFI_PHYSICAL_ADDRESS phys;
 	void *data;
 	unsigned int pages;
 	EFI_HANDLE handle;
 	EFI_STATUS efirc;
 
-	/* Rename file */
+	/* Temporarily rename file */
 	file->filename = efi_bootarch_name();
 
 	/* Allocate memory */
@@ -127,18 +123,47 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
 	}
 	data = ( ( void * ) ( intptr_t ) phys );
 
-
 	/* Read image */
 	file->read ( file, data, 0, file->len );
 	DBG ( "Read %s\n", file->name );
 
 	/* Load image */
-	if ( ( efirc = bs->LoadImage ( FALSE, efi_image_handle, path, data,
-				       file->len, &handle ) ) != 0 ) {
-		die ( "Could not load %s: %#lx\n",
+	if ( ( efirc = bs->LoadImage ( FALSE, efi_image_handle, bootarch_path,
+				       data, file->len, &handle ) ) != 0 ) {
+		DBG ( "Could not load %s: %#lx\n",
 		      file->name, ( ( unsigned long ) efirc ) );
+		bs->FreePages ( phys, pages );
+		file->filename = file->name;
+		return NULL;
 	}
 	DBG ( "Loaded %s as %s\n", file->name, file->filename );
+
+	return handle;
+}
+
+/**
+ * Boot from EFI device
+ *
+ * @v device		Device handle
+ */
+void efi_boot ( EFI_HANDLE device ) {
+	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
+	union {
+		EFI_LOADED_IMAGE_PROTOCOL *image;
+		void *intf;
+	} loaded;
+	struct vdisk_file *file;
+	EFI_HANDLE handle;
+	EFI_STATUS efirc;
+
+	/* Load an image */
+	if ( bootmgfw_ex && ( handle = efi_load ( bootmgfw_ex ) ) ) {
+		file = bootmgfw_ex;
+	} else if ( bootmgfw && ( handle = efi_load ( bootmgfw ) ) ) {
+		file = bootmgfw;
+	} else {
+		die ( "Could not load any bootloaders\n" );
+	}
 
 	/* Get loaded image protocol */
 	if ( ( efirc = bs->OpenProtocol ( handle,

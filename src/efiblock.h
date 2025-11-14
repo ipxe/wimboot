@@ -33,6 +33,6 @@
 
 extern void efi_install ( EFI_HANDLE *vdisk, EFI_HANDLE *vpartition );
 
-extern EFI_DEVICE_PATH_PROTOCOL *bootmgfw_path;
+extern EFI_DEVICE_PATH_PROTOCOL *bootarch_path;
 
 #endif /* _EFIBLOCK_H */

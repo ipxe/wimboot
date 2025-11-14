@@ -290,18 +290,18 @@ static struct {
 			     sizeof ( CHAR16 ) ];
 	} __attribute__ (( packed )) file;
 	EFI_DEVICE_PATH_PROTOCOL end;
-} __attribute__ (( packed )) efi_bootmgfw_path = {
-	.vendor = EFIBLOCK_DEVPATH_VENDOR_INIT ( efi_bootmgfw_path.vendor ),
-	.ata = EFIBLOCK_DEVPATH_ATA_INIT ( efi_bootmgfw_path.ata ),
-	.hd = EFIBLOCK_DEVPATH_HD_INIT ( efi_bootmgfw_path.hd ),
+} __attribute__ (( packed )) efi_bootarch_path = {
+	.vendor = EFIBLOCK_DEVPATH_VENDOR_INIT ( efi_bootarch_path.vendor ),
+	.ata = EFIBLOCK_DEVPATH_ATA_INIT ( efi_bootarch_path.ata ),
+	.hd = EFIBLOCK_DEVPATH_HD_INIT ( efi_bootarch_path.hd ),
 	.file = {
-		.header = EFI_DEVPATH_INIT ( efi_bootmgfw_path.file,
+		.header = EFI_DEVPATH_INIT ( efi_bootarch_path.file,
 					     MEDIA_DEVICE_PATH,
 					     MEDIA_FILEPATH_DP ),
 		.name = EFI_REMOVABLE_MEDIA_FILE_NAME,
 	},
-	.end = EFI_DEVPATH_END_INIT ( efi_bootmgfw_path.end ),
+	.end = EFI_DEVPATH_END_INIT ( efi_bootarch_path.end ),
 };
 
 /** Boot image path */
-EFI_DEVICE_PATH_PROTOCOL *bootmgfw_path = &efi_bootmgfw_path.vendor.Header;
+EFI_DEVICE_PATH_PROTOCOL *bootarch_path = &efi_bootarch_path.vendor.Header;

@@ -40,6 +40,10 @@
 /** bootmgfw.efi path within WIM */
 static const wchar_t bootmgfw_path[] = L"\\Windows\\Boot\\EFI\\bootmgfw.efi";
 
+/** bootmgfw_EX.efi path within WIM */
+static const wchar_t bootmgfw_ex_path[] =
+	L"\\Windows\\Boot\\EFI_EX\\bootmgfw_EX.efi";
+
 /** Other paths within WIM */
 static const wchar_t *efi_wim_paths[] = {
 	L"\\Windows\\Boot\\DVD\\EFI\\boot.sdi",
@@ -55,6 +59,9 @@ static const wchar_t *efi_wim_paths[] = {
 
 /** bootmgfw.efi file */
 struct vdisk_file *bootmgfw;
+
+/** bootmgfw_EX.efi file */
+struct vdisk_file *bootmgfw_ex;
 
 /**
  * Read from EFI file
@@ -131,6 +138,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 	} __attribute__ (( packed )) info;
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
 	struct vdisk_file *wim = NULL;
+	struct vdisk_file *bootarch = NULL;
 	struct vdisk_file *vfile;
 	EFI_FILE_PROTOCOL *root;
 	EFI_FILE_PROTOCOL *file;
@@ -187,10 +195,15 @@ void efi_extract ( EFI_HANDLE handle ) {
 					 efi_read_file );
 
 		/* Check for special-case files */
-		if ( ( wcscasecmp ( wname, efi_bootarch_wname() ) == 0 ) ||
-		     ( wcscasecmp ( wname, L"bootmgfw.efi" ) == 0 ) ) {
-			DBG ( "...found bootmgfw.efi file %ls\n", wname );
+		if ( wcscasecmp ( wname, efi_bootarch_wname() ) == 0 ) {
+			DBG ( "...found bootloader file %ls\n", wname );
+			bootarch = vfile;
+		} else if ( wcscasecmp ( wname, L"bootmgfw.efi" ) == 0 ) {
+			DBG ( "...found bootloader file %ls\n", wname );
 			bootmgfw = vfile;
+		} else if ( wcscasecmp ( wname, L"bootmgfw_EX.efi" ) == 0 ) {
+			DBG ( "...found bootloader file %ls\n", wname );
+			bootmgfw_ex = vfile;
 		} else if ( wcscasecmp ( wname, L"BCD" ) == 0 ) {
 			DBG ( "...found BCD\n" );
 			vdisk_patch_file ( vfile, efi_patch_bcd );
@@ -201,20 +214,36 @@ void efi_extract ( EFI_HANDLE handle ) {
 		}
 	}
 
-	/* Process WIM image */
-	if ( wim ) {
-		vdisk_patch_file ( wim, patch_wim );
-		if ( ( ! bootmgfw ) &&
-		     ( bootmgfw = wim_add_file ( wim, cmdline_index,
+	/* Use only boot<arch>.efi if provided */
+	if ( bootarch ) {
+		if ( bootmgfw )
+			DBG ( "...ignoring %s\n", bootmgfw->name );
+		if ( bootmgfw_ex )
+			DBG ( "...ignoring %s\n", bootmgfw_ex->name );
+		bootmgfw = bootarch;
+		bootmgfw_ex = NULL;
+	}
+
+	/* Extract bootloader(s) from WIM if none are explicitly provided */
+	if ( wim && ( ! bootmgfw ) && ( ! bootmgfw_ex ) ) {
+		if ( ( bootmgfw = wim_add_file ( wim, cmdline_index,
 						 bootmgfw_path ) ) ) {
 			DBG ( "...extracted %ls\n", bootmgfw_path );
 		}
+		if ( ( bootmgfw_ex = wim_add_file ( wim, cmdline_index,
+						    bootmgfw_ex_path ) ) ) {
+			DBG ( "...extracted %ls\n", bootmgfw_ex_path );
+		}
+	}
+
+	/* Process WIM image */
+	if ( wim ) {
+		vdisk_patch_file ( wim, patch_wim );
 		wim_add_files ( wim, cmdline_index, efi_wim_paths );
 	}
 
 	/* Check that we have a boot file */
-	if ( ! bootmgfw ) {
-		die ( "FATAL: no %ls or bootmgfw.efi found\n",
-		      efi_bootarch_wname() );
+	if ( ( ! bootmgfw ) && ( ! bootmgfw_ex ) ) {
+		die ( "FATAL: no bootloader file found\n" );
 	}
 }

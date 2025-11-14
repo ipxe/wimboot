@@ -32,7 +32,6 @@
 
 struct vdisk_file;
 
-extern void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
-		       EFI_HANDLE device );
+extern void efi_boot ( EFI_HANDLE device );
 
 #endif /* _EFIBOOT_H */
