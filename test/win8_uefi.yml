@@ -2,3 +2,6 @@ name: Windows 8 (UEFI)
 version: win8
 arch: x64
 uefi: true
+bcd: true
+logcheck:
+  - 'patched BCD at 0x[0-9a-f]+: ".exe" to ".efi"'

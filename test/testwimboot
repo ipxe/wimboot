@@ -230,7 +230,7 @@ for test_file in args.test:
     uefi = test.get('uefi', False)
     memory = test.get('memory', 2048)
     bootmgr = test.get('bootmgr', False)
-    bcd = test.get('bcd', True)
+    bcd = test.get('bcd', False)
     bootsdi = test.get('boot.sdi', False)
     bootargs = test.get('bootargs', '')
     logcheck = test.get('logcheck', [])
