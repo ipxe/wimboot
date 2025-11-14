@@ -410,7 +410,7 @@ static void vdisk_dir_files ( uint64_t lba, unsigned int count, void *data ) {
 			continue;
 
 		/* Populate directory entry */
-		vdisk_directory_entry ( dirent, file->name, file->xlen,
+		vdisk_directory_entry ( dirent, file->filename, file->xlen,
 					VDISK_READ_ONLY,
 					VDISK_FILE_CLUSTER ( idx ) );
 	}
@@ -637,6 +637,7 @@ struct vdisk_file * vdisk_add_file ( const char *name, void *opaque, size_t len,
 	/* Store file */
 	file = &vdisk_files[index++];
 	snprintf ( file->name, sizeof ( file->name ), "%s", name );
+	file->filename = file->name;
 	file->opaque = opaque;
 	file->len = len;
 	file->xlen = len;

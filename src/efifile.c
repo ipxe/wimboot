@@ -34,6 +34,7 @@
 #include "wimpatch.h"
 #include "wimfile.h"
 #include "efi.h"
+#include "efipath.h"
 #include "efifile.h"
 
 /** bootmgfw.efi path within WIM */
@@ -54,23 +55,6 @@ static const wchar_t *efi_wim_paths[] = {
 
 /** bootmgfw.efi file */
 struct vdisk_file *bootmgfw;
-
-/**
- * Get architecture-specific boot filename
- *
- * @ret bootarch	Architecture-specific boot filename
- */
-static const CHAR16 * efi_bootarch ( void ) {
-	static const CHAR16 bootarch_full[] = EFI_REMOVABLE_MEDIA_FILE_NAME;
-	const CHAR16 *tmp;
-	const CHAR16 *bootarch = bootarch_full;
-
-	for ( tmp = bootarch_full ; *tmp ; tmp++ ) {
-		if ( *tmp == L'\\' )
-			bootarch = ( tmp + 1 );
-	}
-	return bootarch;
-}
 
 /**
  * Read from EFI file
@@ -203,7 +187,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 					 efi_read_file );
 
 		/* Check for special-case files */
-		if ( ( wcscasecmp ( wname, efi_bootarch() ) == 0 ) ||
+		if ( ( wcscasecmp ( wname, efi_bootarch_wname() ) == 0 ) ||
 		     ( wcscasecmp ( wname, L"bootmgfw.efi" ) == 0 ) ) {
 			DBG ( "...found bootmgfw.efi file %ls\n", wname );
 			bootmgfw = vfile;
@@ -223,7 +207,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		if ( ( ! bootmgfw ) &&
 		     ( bootmgfw = wim_add_file ( wim, cmdline_index,
 						 bootmgfw_path,
-						 efi_bootarch() ) ) ) {
+						 L"bootmgfw.efi" ) ) ) {
 			DBG ( "...extracted %ls\n", bootmgfw_path );
 		}
 		wim_add_files ( wim, cmdline_index, efi_wim_paths );
@@ -232,6 +216,6 @@ void efi_extract ( EFI_HANDLE handle ) {
 	/* Check that we have a boot file */
 	if ( ! bootmgfw ) {
 		die ( "FATAL: no %ls or bootmgfw.efi found\n",
-		      efi_bootarch() );
+		      efi_bootarch_wname() );
 	}
 }

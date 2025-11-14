@@ -580,8 +580,10 @@ struct vdisk_directory {
 
 /** A virtual file */
 struct vdisk_file {
-	/** Filename */
+	/** Internal name */
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
+	/** Filename */
+	const char *filename;
 	/** Opaque token */
 	void *opaque;
 	/** Length (excluding any zero-padding) */

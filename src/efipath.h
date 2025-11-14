@@ -85,5 +85,7 @@ efi_devpath_end_init ( EFI_DEVICE_PATH_PROTOCOL *path ) {
 
 extern EFI_DEVICE_PATH_PROTOCOL *
 efi_devpath_end ( EFI_DEVICE_PATH_PROTOCOL *path );
+extern const CHAR16 * efi_bootarch_wname ( void );
+extern const char * efi_bootarch_name ( void );
 
 #endif /* _EFIPATH_H */

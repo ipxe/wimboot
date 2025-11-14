@@ -24,6 +24,7 @@
  *
  */
 
+#include <stdio.h>
 #include "wimboot.h"
 #include "efi.h"
 #include "efipath.h"
@@ -43,4 +44,34 @@ EFI_DEVICE_PATH_PROTOCOL * efi_devpath_end ( EFI_DEVICE_PATH_PROTOCOL *path ) {
 			 ( ( path->Length[1] << 8 ) | path->Length[0] ) );
 	}
 	return path;
+}
+
+/**
+ * Get architecture-specific boot filename
+ *
+ * @ret wname		Architecture-specific boot filename
+ */
+const CHAR16 * efi_bootarch_wname ( void ) {
+	static const CHAR16 bootarch_path[] = EFI_REMOVABLE_MEDIA_FILE_NAME;
+	const CHAR16 *bootarch_wname = bootarch_path;
+	const CHAR16 *tmp;
+
+	for ( tmp = bootarch_path ; *tmp ; tmp++ ) {
+		if ( *tmp == L'\\' )
+			bootarch_wname = ( tmp + 1 );
+	}
+	return bootarch_wname;
+}
+
+/**
+ * Get architecture-specific boot filename
+ *
+ * @ret name		Architecture-specific boot filename
+ */
+const char * efi_bootarch_name ( void ) {
+	static char name[ sizeof ( EFI_REMOVABLE_MEDIA_FILE_NAME ) /
+			  sizeof ( wchar_t ) ];
+
+	snprintf ( name, sizeof ( name ), "%ls", efi_bootarch_wname() );
+	return name;
 }

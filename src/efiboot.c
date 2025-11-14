@@ -114,6 +114,9 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
 	EFI_HANDLE handle;
 	EFI_STATUS efirc;
 
+	/* Rename file */
+	file->filename = efi_bootarch_name();
+
 	/* Allocate memory */
 	pages = ( ( file->len + PAGE_SIZE - 1 ) / PAGE_SIZE );
 	if ( ( efirc = bs->AllocatePages ( AllocateAnyPages,
@@ -135,7 +138,7 @@ void efi_boot ( struct vdisk_file *file, EFI_DEVICE_PATH_PROTOCOL *path,
 		die ( "Could not load %s: %#lx\n",
 		      file->name, ( ( unsigned long ) efirc ) );
 	}
-	DBG ( "Loaded %s\n", file->name );
+	DBG ( "Loaded %s as %s\n", file->name, file->filename );
 
 	/* Get loaded image protocol */
 	if ( ( efirc = bs->OpenProtocol ( handle,
