@@ -206,8 +206,7 @@ void efi_extract ( EFI_HANDLE handle ) {
 		vdisk_patch_file ( wim, patch_wim );
 		if ( ( ! bootmgfw ) &&
 		     ( bootmgfw = wim_add_file ( wim, cmdline_index,
-						 bootmgfw_path,
-						 L"bootmgfw.efi" ) ) ) {
+						 bootmgfw_path ) ) ) {
 			DBG ( "...extracted %ls\n", bootmgfw_path );
 		}
 		wim_add_files ( wim, cmdline_index, efi_wim_paths );

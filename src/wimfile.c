@@ -76,14 +76,15 @@ static void wim_read_file ( struct vdisk_file *file, void *data,
  * @v file		Underlying virtual file
  * @v index		Image index, or 0 to use boot image
  * @v path		Path to file within WIM
- * @v wname		New virtual file name
  * @ret file		Virtual file, or NULL if not found
  */
 struct vdisk_file * wim_add_file ( struct vdisk_file *file, unsigned int index,
-				   const wchar_t *path, const wchar_t *wname ) {
+				   const wchar_t *path ) {
 	static unsigned int wim_file_idx = 0;
 	struct wim_resource_header meta;
 	struct wim_file *wfile;
+	const wchar_t *wname;
+	const wchar_t *tmp;
 	char name[ VDISK_NAME_LEN + 1 /* NUL */ ];
 	unsigned int i;
 	int rc;
@@ -92,6 +93,13 @@ struct vdisk_file * wim_add_file ( struct vdisk_file *file, unsigned int index,
 	if ( wim_file_idx >= WIM_MAX_FILES )
 		die ( "Too many WIM files\n" );
 	wfile = &wim_files[wim_file_idx];
+
+	/* Construct file name */
+	wname = path;
+	for ( tmp = wname ; *tmp ; tmp++ ) {
+		if ( *tmp == L'\\' )
+			wname = ( tmp + 1 );
+	}
 
 	/* Construct ASCII file name */
 	snprintf ( name, sizeof ( name ), "%ls", wname );
@@ -132,20 +140,8 @@ struct vdisk_file * wim_add_file ( struct vdisk_file *file, unsigned int index,
 void wim_add_files ( struct vdisk_file *file, unsigned int index,
 		     const wchar_t **paths ) {
 	const wchar_t **path;
-	const wchar_t *wname;
-	const wchar_t *tmp;
 
 	/* Add any existent files within the list */
-	for ( path = paths ; *path ; path++ ) {
-
-		/* Construct file name */
-		wname = *path;
-		for ( tmp = wname ; *tmp ; tmp++ ) {
-			if ( *tmp == L'\\' )
-				wname = ( tmp + 1 );
-		}
-
-		/* Add virtual file, if existent */
-		wim_add_file ( file, index, *path, wname );
-	}
+	for ( path = paths ; *path ; path++ )
+		wim_add_file ( file, index, *path );
 }

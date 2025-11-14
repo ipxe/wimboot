@@ -454,8 +454,7 @@ int main ( void ) {
 		vdisk_patch_file ( bootwim, patch_wim );
 		if ( ( ! bootmgr ) &&
 		     ( bootmgr = wim_add_file ( bootwim, cmdline_index,
-						bootmgr_path,
-						L"bootmgr.exe" ) ) ) {
+						bootmgr_path ) ) ) {
 			DBG ( "...extracted bootmgr.exe\n" );
 		}
 		wim_add_files ( bootwim, cmdline_index, wim_paths );
