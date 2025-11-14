@@ -98,8 +98,8 @@ def ovmf_path():
     return next(x for x in OVMF_PATHS if os.path.exists(x))
 
 
-def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
-           booturl):
+def vm_xml(virttype, name, uuid, machine, memory, uefi, dbgfile, serfile,
+           romfile, booturl):
     """Construct XML description of VM"""
     x_domain = etree.Element('domain')
     x_domain.attrib['type'] = virttype
@@ -111,6 +111,7 @@ def vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile, romfile,
     x_ostype = etree.SubElement(x_os, 'type')
     x_ostype.text = 'hvm'
     x_ostype.attrib['arch'] = 'x86_64'
+    x_ostype.attrib['machine'] = machine
     x_cpu = etree.SubElement(x_domain, 'cpu')
     x_cpu.attrib['match'] = 'exact'
     x_cpu_model = etree.SubElement(x_cpu, 'model')
@@ -225,6 +226,7 @@ for test_file in args.test:
     name = test.get('name', key)
     version = test['version']
     arch = test['arch']
+    machine = test.get('machine', 'pc')
     uefi = test.get('uefi', False)
     memory = test.get('memory', 2048)
     bootmgr = test.get('bootmgr', False)
@@ -265,7 +267,7 @@ for test_file in args.test:
     virttype = virttypes[arch]
 
     # Launch VM
-    xml = vm_xml(virttype, name, uuid, memory, uefi, dbgfile, serfile,
+    xml = vm_xml(virttype, name, uuid, machine, memory, uefi, dbgfile, serfile,
                  romfile, booturl)
     if args.verbose >= Verbosity.DEBUG:
         print("%s definition:\n%s\n" % (name, xml))

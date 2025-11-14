@@ -1,4 +1,5 @@
 name: Windows 11 (UEFI)
 version: win11
 arch: x64
+machine: q35
 uefi: true
