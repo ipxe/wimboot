@@ -86,9 +86,10 @@ jobs:
           sudo apt update
           sudo apt install -y -o Acquire::Retries=50 \
                            pesign gcab gcc-aarch64-linux-gnu \
-                           qemu-system-x86 ovmf libvirt-daemon \
+                           qemu-system-x86 osslsigncode ovmf libvirt-daemon \
                            python3-libvirt python3-lxml python3-pil \
-                           python3-qrcode python3-yaml python3-zbar
+                           python3-qrcode python3-virt-firmware python3-yaml \
+                           python3-zbar
 
       - name: Build
         working-directory: src

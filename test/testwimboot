@@ -25,11 +25,22 @@ QEMU_NS = 'http://libvirt.org/schemas/domain/qemu/1.0'
 etree.register_namespace('qemu', QEMU_NS)
 
 OVMF_PATHS = [
-    '/usr/share/OVMF/OVMF_CODE.fd',
-    '/usr/share/OVMF/OVMF_CODE_2M.fd',
-    '/usr/share/OVMF/OVMF_CODE_4M.fd'
+    {
+        'code': '/usr/share/OVMF/OVMF_CODE.fd',
+        'vars': '/usr/share/OVMF/OVMF_VARS.fd',
+        'secboot': '/usr/share/OVMF/OVMF_CODE.secboot.fd',
+    },
+    {
+        'code': '/usr/share/OVMF/OVMF_CODE_2M.fd',
+        'vars': '/usr/share/OVMF/OVMF_VARS_2M.fd',
+        'secboot': '/usr/share/OVMF/OVMF_CODE_2M.secboot.fd',
+    },
+    {
+        'code': '/usr/share/OVMF/OVMF_CODE_4M.fd',
+        'vars': '/usr/share/OVMF/OVMF_VARS_4M.fd',
+        'secboot': '/usr/share/OVMF/OVMF_CODE_4M.secboot.fd',
+    },
 ]
-
 
 class Verbosity(IntEnum):
     """Verbosity level"""
@@ -70,7 +81,7 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     """Construct iPXE boot script"""
     script = textwrap.dedent(f"""
     #!ipxe
-    kernel ../wimboot {bootargs}
+    kernel wimboot-{uuid} {bootargs}
     initrd -n qr.txt qr-{uuid}.txt qr.txt
     initrd ../images/{version}/{arch}/sources/boot.wim boot.wim
     initrd ../winpeshl.ini winpeshl.ini
@@ -93,13 +104,28 @@ def ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs):
     return script
 
 
-def ovmf_path():
-    """Determine OVMF path"""
-    return next(x for x in OVMF_PATHS if os.path.exists(x))
+def setup_ovmf(secboot, nvram, testcert):
+    """Determine OVMF path and construct variable store"""
+    for ovmf in OVMF_PATHS:
+        ovmfcode = ovmf['secboot' if secboot else 'code']
+        ovmfvars = ovmf['vars']
+        if not os.path.exists(ovmfcode) or not os.path.exists(ovmfvars):
+            continue
+        cmd = ['virt-fw-vars', '-i', ovmfvars, '-o', nvram]
+        if secboot:
+            cmd.extend([
+                '--enroll-generate', "Dummy platform key",
+                '--distro-keys', 'windows',
+                '--add-db', uuid4().hex, testcert,
+                '--secure-boot'
+            ])
+        subprocess.run(cmd, check=True)
+        return ovmfcode
+    raise FileNotFoundError("No usable OVMF found")
 
 
-def vm_xml(virttype, name, uuid, machine, memory, uefi, dbgfile, serfile,
-           romfile, booturl):
+def vm_xml(virttype, name, uuid, machine, memory, loader, nvram, dbgfile,
+           serfile, romfile, booturl):
     """Construct XML description of VM"""
     x_domain = etree.Element('domain')
     x_domain.attrib['type'] = virttype
@@ -126,10 +152,14 @@ def vm_xml(virttype, name, uuid, machine, memory, uefi, dbgfile, serfile,
         x_cpu_feature = etree.SubElement(x_cpu, 'feature')
         x_cpu_feature.attrib['name'] = feature
         x_cpu_feature.attrib['policy'] = policy
-    if uefi:
+    if loader:
         x_loader = etree.SubElement(x_os, 'loader')
-        x_loader.text = ovmf_path()
+        x_loader.text = loader
         x_loader.attrib['type'] = 'pflash'
+    if nvram:
+        x_nvram = etree.SubElement(x_os, 'nvram')
+        x_nvram.text = nvram
+        x_nvram.attrib['format'] = 'raw'
     x_features = etree.SubElement(x_domain, 'features')
     x_acpi = etree.SubElement(x_features, 'acpi')
     x_boot = etree.SubElement(x_os, 'boot')
@@ -228,6 +258,7 @@ for test_file in args.test:
     arch = test['arch']
     machine = test.get('machine', 'pc')
     uefi = test.get('uefi', False)
+    secboot = test.get('secboot', False)
     memory = test.get('memory', 2048)
     bootmgr = test.get('bootmgr', False)
     bcd = test.get('bcd', False)
@@ -237,6 +268,17 @@ for test_file in args.test:
 
     # Generate test UUID
     uuid = uuid4().hex
+
+    # Generate test binary
+    testcert = os.path.abspath('testcert.crt')
+    testkey = os.path.abspath('testcert.key')
+    unsigned = os.path.abspath('wimboot')
+    signed = os.path.abspath('in/wimboot-%s' % uuid)
+    if secboot:
+        subprocess.run(['osslsigncode', 'sign', '-certs', testcert, '-key',
+                        testkey, '-in', unsigned, '-out', signed], check=True)
+    else:
+        os.symlink(unsigned, signed)
 
     # Construct boot script
     script = ipxe_script(uuid, version, arch, bootmgr, bcd, bootsdi, bootargs)
@@ -253,6 +295,13 @@ for test_file in args.test:
     with open(qrfile, 'wt', newline='\r\n') as fh:
         qr.print_ascii(out=fh)
 
+    # Determine OVMF path and construct variable store
+    nvram = None
+    loader = None
+    if uefi:
+        nvram = os.path.abspath('in/vars-%s.nvram' % uuid)
+        loader = setup_ovmf(secboot, nvram, testcert)
+
     # Construct log filenames
     dbgfile = os.path.abspath('out/%s.debug.log' % key)
     serfile = os.path.abspath('out/%s.serial.log' % key)
@@ -267,8 +316,8 @@ for test_file in args.test:
     virttype = virttypes[arch]
 
     # Launch VM
-    xml = vm_xml(virttype, name, uuid, machine, memory, uefi, dbgfile, serfile,
-                 romfile, booturl)
+    xml = vm_xml(virttype, name, uuid, machine, memory, loader, nvram, dbgfile,
+                 serfile, romfile, booturl)
     if args.verbose >= Verbosity.DEBUG:
         print("%s definition:\n%s\n" % (name, xml))
     vm = virt.createXML(xml, flags=libvirt.VIR_DOMAIN_START_AUTODESTROY)

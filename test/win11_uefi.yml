@@ -3,3 +3,6 @@ version: win11
 arch: x64
 machine: q35
 uefi: true
+secboot: true
+logcheck:
+  - Secure Boot is enabled

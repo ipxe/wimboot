@@ -7,5 +7,5 @@ all : $(ALL_TEST)
 	./testwimboot $(ARGS) $<
 
 clean :
-	$(RM) in/*.ipxe in/*.txt
+	$(RM) in/wimboot-* in/*.ipxe in/*.txt in/*.nvram
 	$(RM) out/*.log out/*.png

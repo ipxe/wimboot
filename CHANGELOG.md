@@ -16,7 +16,9 @@ Changelog
 - Drop Windows 7 UEFI test, since upstream OVMF no longer provides the
   necessary VbeShim support.
 
-- Add Windows 11 tests.
+- Add support for enabling UEFI Secure Boot during tests.
+
+- Add Windows 11 tests (including a test with Secure Boot enabled).
 
 ## [v2.8.0] 2024-05-02
 

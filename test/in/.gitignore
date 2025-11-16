@@ -1,2 +1,4 @@
+wimboot-*
 *.ipxe
 *.txt
+*.nvram
