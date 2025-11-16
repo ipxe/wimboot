@@ -95,6 +95,7 @@ OBJCOPY_arm64	?= $(CROSS_arm64)$(OBJCOPY)
 # Build flags for host binaries
 #
 HOST_CFLAGS	+= -Wall -W -Werror
+HOST_EFI_CFLAGS	+= -fshort-wchar
 
 # Build flags for all targets
 #
@@ -291,10 +292,12 @@ lib.arm64.a : $(OBJECTS_arm64) Makefile
 # EFI relocator
 
 elf2efi32 : elf2efi.c Makefile
-	$(HOST_CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET32 $< -o $@
+	$(HOST_CC) $(HOST_CFLAGS) $(HOST_EFI_CFLAGS) -idirafter . \
+		-DEFI_TARGET32 $< -o $@
 
 elf2efi64 : elf2efi.c Makefile
-	$(HOST_CC) $(HOST_CFLAGS) -idirafter . -DEFI_TARGET64 $< -o $@
+	$(HOST_CC) $(HOST_CFLAGS) $(HOST_EFI_CFLAGS) -idirafter . \
+		-DEFI_TARGET64 $< -o $@
 
 ###############################################################################
 #
