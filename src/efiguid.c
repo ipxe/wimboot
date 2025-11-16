@@ -31,6 +31,7 @@
 #include "efi/Protocol/GraphicsOutput.h"
 #include "efi/Protocol/LoadedImage.h"
 #include "efi/Protocol/SimpleFileSystem.h"
+#include "efi/Guid/GlobalVariable.h"
 
 /** Block I/O protocol GUID */
 EFI_GUID efi_block_io_protocol_guid
@@ -51,3 +52,7 @@ EFI_GUID efi_loaded_image_protocol_guid
 /** Simple file system protocol GUID */
 EFI_GUID efi_simple_file_system_protocol_guid
 	= EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
+
+/** Global variable GUID */
+EFI_GUID efi_global_variable_guid
+	= EFI_GLOBAL_VARIABLE;

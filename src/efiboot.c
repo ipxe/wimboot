@@ -32,6 +32,7 @@
 #include "pause.h"
 #include "efi.h"
 #include "efi/Protocol/GraphicsOutput.h"
+#include "efi/Guid/GlobalVariable.h"
 #include "efipath.h"
 #include "efiblock.h"
 #include "efifile.h"
@@ -97,6 +98,36 @@ efi_open_protocol_wrapper ( EFI_HANDLE handle, EFI_GUID *protocol,
 }
 
 /**
+ * Show Secure Boot status
+ *
+ */
+static void efi_show_sb ( void ) {
+	EFI_RUNTIME_SERVICES *rs = efi_systab->RuntimeServices;
+	char secureboot;
+	UINTN size;
+	EFI_STATUS efirc;
+
+	/* Get Secure Boot status, if known */
+	size = sizeof ( secureboot );
+	efirc = rs->GetVariable ( EFI_SECURE_BOOT_MODE_NAME,
+				  &efi_global_variable_guid, NULL,
+				  &size, &secureboot );
+	switch ( efirc ) {
+	case 0:
+		printf ( "Secure Boot is %sabled\n",
+			 ( secureboot ? "en" : "dis" ) );
+		break;
+	case EFI_NOT_FOUND:
+		printf ( "Secure Boot is not supported\n" );
+		break;
+	default:
+		printf ( "Secure Boot status unknown: %#lx\n",
+			 ( ( unsigned long ) efirc ) );
+		return;
+	}
+}
+
+/**
  * Try loading EFI image
  *
  * @v file		Virtual file
@@ -155,6 +186,9 @@ void efi_boot ( EFI_HANDLE device ) {
 	struct vdisk_file *file;
 	EFI_HANDLE handle;
 	EFI_STATUS efirc;
+
+	/* Show Secure Boot status */
+	efi_show_sb();
 
 	/* Load an image */
 	if ( bootmgfw_ex && ( handle = efi_load ( bootmgfw_ex ) ) ) {
