@@ -114,15 +114,15 @@ static void efi_show_sb ( void ) {
 				  &size, &secureboot );
 	switch ( efirc ) {
 	case 0:
-		printf ( "Secure Boot is %sabled\n",
-			 ( secureboot ? "en" : "dis" ) );
+		DBG ( "Secure Boot is %sabled\n",
+		      ( secureboot ? "en" : "dis" ) );
 		break;
 	case EFI_NOT_FOUND:
-		printf ( "Secure Boot is not supported\n" );
+		DBG ( "Secure Boot is not supported\n" );
 		break;
 	default:
-		printf ( "Secure Boot status unknown: %#lx\n",
-			 ( ( unsigned long ) efirc ) );
+		DBG ( "Secure Boot status unknown: %#lx\n",
+		      ( ( unsigned long ) efirc ) );
 		return;
 	}
 }
