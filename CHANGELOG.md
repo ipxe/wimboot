@@ -3,6 +3,8 @@ Changelog
 
 ## [Unreleased]
 
+## [v2.9.0] 2025-11-17
+
 - Extract the `boot.stl` file automatically from the `.wim` image, to
   allow Windows 11 24H2 and newer to boot (debugged with [2Pint
   Software][2pint]).
@@ -259,6 +261,7 @@ Changelog
 
 
 [unreleased]: https://github.com/ipxe/wimboot/commits
+[v2.9.0]: https://github.com/ipxe/wimboot/releases/tag/v2.9.0
 [v2.8.0]: https://github.com/ipxe/wimboot/releases/tag/v2.8.0
 [v2.7.6]: https://github.com/ipxe/wimboot/releases/tag/v2.7.6
 [v2.7.5]: https://github.com/ipxe/wimboot/releases/tag/v2.7.5

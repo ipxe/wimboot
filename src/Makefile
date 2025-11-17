@@ -1,6 +1,6 @@
 # Versioning information
 #
-VERSION := v2.8.0
+VERSION := v2.9.0
 SBAT_GENERATION := 1
 
 # Abstract target-independent objects
