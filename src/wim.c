@@ -450,6 +450,12 @@ int wim_path ( struct vdisk_file *file, struct wim_header *header,
 			       sizeof ( security ) ) ) != 0 )
 		return rc;
 
+	/* Special case: the header of an an empty security block
+	   may contain a length of 0, although we must still consider a
+	   minimum header length of 8 */
+	if (security.len == 0)
+		security.len = sizeof(security);
+
 	/* Get root directory offset */
 	direntry->subdir = ( ( security.len + sizeof ( uint64_t ) - 1 ) &
 			     ~( sizeof ( uint64_t ) - 1 ) );
